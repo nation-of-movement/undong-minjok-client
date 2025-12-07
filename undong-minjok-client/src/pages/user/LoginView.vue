@@ -17,7 +17,9 @@
           <input type="password" v-model="password" placeholder="비밀번호를 입력하세요" />
         </div>
 
-        <button class="btn-login">로그인</button>
+        <button class="btn-login" :disabled="auth.loading">
+          {{ auth.loading ? "로그인 중..." : "로그인" }}
+        </button>
 
         <div class="extra-links">
           <RouterLink to="/signup">회원가입</RouterLink>
@@ -32,15 +34,35 @@
 
 <script setup>
 import { ref } from "vue";
+import { useRouter } from "vue-router";
+import { useAuthStore } from "@/stores/authStore";
 
 const loginId = ref("");
 const password = ref("");
 
-const onSubmit = () => {
-  console.log("로그인 시도:", loginId.value, password.value);
+const auth = useAuthStore();
+const router = useRouter();
+
+const onSubmit = async () => {
+  if (!loginId.value || !password.value) {
+    alert("아이디와 비밀번호를 입력해주세요.");
+    return;
+  }
+
+  const result = await auth.login({
+    loginId: loginId.value,
+    password: password.value,
+  });
+
+  if (!result.success) {
+    alert(result.message || "로그인에 실패했습니다.");
+    return;
+  }
+
+  // 로그인 성공 → 홈으로 이동
+  router.push("/");
 };
 </script>
-
 <style scoped>
 /* 전체 배경 */
 .login-container {
