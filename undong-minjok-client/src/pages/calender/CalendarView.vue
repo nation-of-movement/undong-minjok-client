@@ -136,7 +136,6 @@ export default {
   box-sizing: border-box;
 }
 
-/* 타이틀 영역 축소 */
 .title {
   font-size: 22px;
   font-weight: 800;
@@ -153,14 +152,12 @@ export default {
   animation-delay: 1s;
 }
 
-/* container 높이를 화면에 맞게 */
 .container {
   display: flex;
   gap: 20px;
-  height: calc(100vh - 120px); /* 타이틀 + padding 제외한 전체 높이 */
+  height: calc(100vh - 120px);
 }
 
-/* 카드 스타일 (크기 축소) */
 .card {
   background: #fff;
   color: #333;
@@ -170,7 +167,6 @@ export default {
   overflow: hidden;
 }
 
-/* 캘린더 박스 */
 .calendar-box {
   width: 70%;
   min-width: 480px;
@@ -183,7 +179,6 @@ export default {
   color: #e60023;
 }
 
-/* 요일 */
 .weekday-row {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -198,7 +193,6 @@ export default {
   font-size: 13px;
 }
 
-/* 날짜 */
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -214,12 +208,9 @@ export default {
   position: relative;
   transition: 0.2s;
 
-  /* 새로 적용: 화면 높이에 따라 자동크기 */
   height: calc((100vh - 150px) / 7);
   min-height: 45px;
 
-  /* 정사각형 제거 */
-  /* aspect-ratio: 1 / 1;   <-- 삭제 */
 }
 
 .day:hover {
@@ -237,18 +228,11 @@ export default {
   color: #333;
 }
 
-/*.day-photo {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}*/
-
 .selected {
   background: #ffe6ea;
   border: 2px solid #e60023;
 }
 
-/* 템플릿 박스 */
 .template-box {
   width: 28%;
   min-width: 220px;
@@ -267,7 +251,6 @@ export default {
   margin-bottom: 10px;
 }
 
-/* 템플릿 카드 */
 .template-card {
   padding: 12px;
   margin-bottom: 12px;
@@ -293,13 +276,11 @@ export default {
   opacity: 0.7;
 }
 
-/* 타이틀 애니메이션 */
 @keyframes fadeInDrop {
   0% { opacity: 0; transform: translateY(-20px); }
   100% { opacity: 1; transform: translateY(0); }
 }
 
-/* 둥둥 */
 @keyframes float {
   0% { transform: translateY(0); }
   50% { transform: translateY(-5px); }

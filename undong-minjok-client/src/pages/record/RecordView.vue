@@ -129,7 +129,6 @@ export default {
   },
 
   methods: {
-    /* ------------------------------ 초기 진입 → init API ------------------------------ */
     async initRecord() {
       const res = await DailyWorkoutRecordApi.initRecord(this.date);
       this.recordId = res.data.recordId;
@@ -139,7 +138,6 @@ export default {
       }
     },
 
-    /* ------------------------------ 기존 기록 불러오기 ------------------------------ */
     async loadExistingRecord() {
       const res = await DailyWorkoutRecordApi.getRecord(this.date);
       const data = res.data;
@@ -151,7 +149,6 @@ export default {
 
       }
 
-      // 운동 데이터 매핑
       this.rows = data.exercises.map(e => ({
         exerciseName: e.exerciseName,
         part: e.exercisePart,  // 정상 매핑
@@ -163,7 +160,6 @@ export default {
       }));
     },
 
-    /* ------------------------------ 행 추가 ------------------------------ */
     addRow() {
       this.rows.push({
         exerciseName: "",
@@ -180,7 +176,6 @@ export default {
       this.rows.splice(idx, 1);
     },
 
-    /* ------------------------------ 이미지 업로드 ------------------------------ */
     async onImageSelect(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -190,7 +185,6 @@ export default {
       await DailyWorkoutRecordApi.uploadImage(this.date, file);
     },
 
-    /* ------------------------------ 모달 ------------------------------ */
     openModal(index) {
       this.modalRowIndex = index;
       this.partKeyword = "";
@@ -204,7 +198,6 @@ export default {
       this.closeModal();
     },
 
-    /* ------------------------------ 저장 ------------------------------ */
     async saveRecord() {
       const payload = {
         date: this.date,
@@ -227,7 +220,6 @@ export default {
 </script>
 
 <style scoped>
-/* 전체 페이지 wrapper */
 .page-wrapper {
   padding: 40px;
   background: #F4F4F4;
@@ -241,7 +233,6 @@ h1 {
   margin-bottom: 25px;
 }
 
-/* ---------- 레이아웃 ---------- */
 .record-wrapper {
   display: grid;
   grid-template-columns: 1.6fr 0.9fr;
@@ -317,7 +308,6 @@ td input:focus {
   font-weight: bold;
 }
 
-/* ---------- 이미지 업로드 ---------- */
 .img-box {
   background: #fff;
   padding: 25px;
@@ -346,7 +336,6 @@ td input:focus {
   object-fit: cover;
 }
 
-/* ---------- 모달 ---------- */
 .modal-bg {
   position: fixed;
   top: 0; left: 0;

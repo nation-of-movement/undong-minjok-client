@@ -37,7 +37,6 @@ import { useRouter } from "vue-router";
 
 const router = useRouter();
 
-/* 최근 5년 */
 const currentYear = new Date().getFullYear();
 const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
 
