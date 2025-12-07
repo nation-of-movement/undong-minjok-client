@@ -3,7 +3,7 @@
     <HeaderBar />
 
     <main class="content">
-      <slot />
+      <router-view />
     </main>
 
     <footer class="footer">
