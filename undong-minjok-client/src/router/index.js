@@ -1,10 +1,10 @@
 import { createRouter, createWebHistory } from "vue-router";
 import DefaultLayout from "@/layouts/DefaultLayout.vue";
 import HomeView from "@/pages/HomeView.vue";
-import CalendarView from '@/pages/DailyWorkoutRecord/calender/CalendarView.vue'
-import MonthSelectView from '@/pages/DailyWorkoutRecord/calender/MonthSelectView.vue'
-import RecordView from '@/pages/DailyWorkoutRecord/record/RecordView.vue'
-import { useAuthStore } from '@/stores/authStore';
+import CalendarView from '@/pages/calender/CalendarView.vue'
+import MonthSelectView from '@/pages/calender/MonthSelectView.vue'
+import RecordView from '@/pages/record/RecordView.vue'
+
 
 const routes = [
   {
@@ -25,8 +25,6 @@ const routes = [
       },
     ]
   },
-
-  // -------------------- 달력 / 운동 기록 --------------------
   {
     path: "/month",
     name: "MonthSelect",
@@ -43,6 +41,19 @@ const routes = [
     name: 'Record',
     component: RecordView,
     props: route => ({ date: route.query.date })
+    // → query 로 넘긴 date를 props 로 받을 수 있게 함
+  },
+// 포인트 - 결제하기
+  { path: '/payments', name: 'PointPayments',component: PointPaymentsView },
+  {
+    path: "/success",
+    name: "Success",
+    component: PointPaymentsSucceeView
+  },
+  {
+    path: "/fail",
+    name: "Fail",
+    component: PointPaymentsFailView
   },
 
   // -------------------- 템플릿 상세 페이지 --------------------
