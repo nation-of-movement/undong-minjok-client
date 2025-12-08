@@ -6,9 +6,10 @@
   </section>
 
   <section class="features">
-    <div class="feature-card">
-      <h3>🏋️ 운동 루틴 공유</h3>
-      <p>전문가 & 유저 루틴을 한 곳에서 확인하세요.</p>
+    <!-- 기록하러 가기 -->
+    <div class="feature-card" @click="goToRecord">
+      <h3>🏋️ 기록하러 가기</h3>
+      <p>오늘의 운동을 기록하러 가보세요!</p>
     </div>
 
     <div class="feature-card">
@@ -22,6 +23,18 @@
     </div>
   </section>
 </template>
+
+<script>
+export default {
+  name: "HomeView",
+
+  methods: {
+    goToRecord() {
+      this.$router.push("/month");
+    }
+  }
+}
+</script>
 
 <style scoped>
 .hero {
