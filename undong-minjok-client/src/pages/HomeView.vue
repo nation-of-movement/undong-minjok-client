@@ -1,27 +1,32 @@
 <template>
-  <section class="hero">
-    <h1>운동의 민족</h1>
-    <p>대한민국 No.1 운동 플랫폼</p>
-    <button class="btn-red big">시작하기</button>
-  </section>
+  <div class="home">
 
-  <section class="features">
-    <!-- 기록하러 가기 -->
-    <div class="feature-card" @click="goToRecord">
-      <h3>🏋️ 기록하러 가기</h3>
-      <p>오늘의 운동을 기록하러 가보세요!</p>
-    </div>
+    <section class="features">
+      <!-- 기록하러 가기 -->
+      <div class="feature-card" @click="goToRecord">
+        <h3>🏋️ 기록하러 가기</h3>
+        <p>오늘의 운동을 기록하러 가보세요!</p>
+      </div>
 
-    <div class="feature-card">
-      <h3>🔥 챌린지 참여</h3>
-      <p>운동 기록하고 랭킹에 도전하세요.</p>
-    </div>
+      <div class="feature-card">
+        <h3>🔥 챌린지 참여</h3>
+        <p>운동 기록하고 랭킹에 도전하세요.</p>
+      </div>
 
-    <div class="feature-card">
-      <h3>💬 커뮤니티</h3>
-      <p>운동하는 사람들과 실시간으로 소통하세요.</p>
-    </div>
-  </section>
+      <div class="feature-card">
+        <h3>💬 커뮤니티</h3>
+        <p>운동하는 사람들과 실시간으로 소통하세요.</p>
+      </div>
+    </section>
+
+    <!-- Hero section -->
+    <section class="hero">
+      <h1>운동의 민족</h1>
+      <p>대한민국 No.1 운동 플랫폼</p>
+      <button class="btn-red big">시작하기</button>
+    </section>
+
+  </div>
 </template>
 
 <script>
@@ -38,7 +43,6 @@ export default {
 
 <style scoped>
 .hero {
-  height: 70vh;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -71,7 +75,7 @@ export default {
 }
 
 .features {
-  padding: 60px 5%;
+  padding: 20px 5%;
   display: flex;
   gap: 20px;
   justify-content: center;
@@ -85,6 +89,7 @@ export default {
   border-radius: 12px;
   transition: all .3s ease;
   color: #fff;
+  cursor: pointer;
 }
 
 .feature-card:hover {

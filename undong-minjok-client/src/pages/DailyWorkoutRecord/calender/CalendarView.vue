@@ -1,4 +1,6 @@
 <template>
+  <RecordHeaderBar/>
+
   <div class="page">
     <h2 class="title floating-title">오늘도 오운완 챌린지 성공해볼까요? 📸💪</h2>
     <div class="container">
@@ -51,8 +53,12 @@
   </div>
 </template>
 <script>
+import RecordHeaderBar from '@/pages/DailyWorkoutRecord/RecordHeaderBar.vue'
+import dailyWorkoutRecordApi from '@/api/dailyWorkoutRecordApi.js'
+
 export default {
   name: 'CalendarPage',
+  components: { RecordHeaderBar },
 
   data() {
     return {
@@ -64,10 +70,7 @@ export default {
       weekdays: ['월', '화', '수', '목', '금', '토', '일'],
       templateList: [],
 
-      photos: {
-        5: '/uploads/sample.jpg',
-        10: '/uploads/another.jpg',
-      },
+      photos: {},
     }
   },
 
@@ -79,6 +82,7 @@ export default {
 
   mounted() {
     this.loadTemplates()
+    this.loadPhotos()
   },
 
   methods: {
@@ -124,15 +128,33 @@ export default {
 
       alert(`템플릿이 ${date}에 적용되었어요!`)
     },
+
+    async loadPhotos() {
+      const res = await dailyWorkoutRecordApi.getMonthlyPhotos(this.year, this.month)
+
+      // 결과 예:
+      // [ { day: 5, workoutImg: "workout/a.jpg" }, ... ]
+
+      this.photos = {}
+
+      const list = res.data.data ?? res.data   // ApiResponse 대응
+
+      list.forEach(item => {
+        this.photos[item.day] = `http://localhost:8888/uploads/${item.workoutImg}`
+      })
+    }
   },
 }
 </script>
 <style scoped>
 .page {
-  padding: 20px;
-  color: white;
+  display: flex;
+  flex-direction: column;
+  height: 80vh;
+  overflow: hidden;
   background: #000;
-  min-height: 100vh;
+  color: white;
+  padding: 0 30px;
   box-sizing: border-box;
 }
 
@@ -140,11 +162,10 @@ export default {
   font-size: 22px;
   font-weight: 800;
   text-align: center;
-  margin-bottom: 15px;
+  /*margin-bottom: 40px;*/
   color: #ffffff;
   opacity: 0.95;
   text-shadow: 0 0 10px rgba(230, 0, 35, 0.4);
-
   animation: fadeInDrop 1s ease-out forwards;
 }
 .floating-title {
@@ -153,9 +174,10 @@ export default {
 }
 
 .container {
+  flex: 1;
   display: flex;
   gap: 20px;
-  height: calc(100vh - 120px);
+  overflow: hidden; /* 내부 스크롤 제거 */
 }
 
 .card {
@@ -170,6 +192,10 @@ export default {
 .calendar-box {
   width: 70%;
   min-width: 480px;
+  /*
+  height: calc(100% - 150px);
+  */
+  overflow: hidden; /* 달력 박스 자체에 스크롤 없음 */
 }
 
 .month-title {
@@ -197,7 +223,7 @@ export default {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 6px;
-  height: calc(100% - 60px); /* 달력 전체 높이 자동 조정 */
+  height: calc(100% - 70px);
 }
 
 .day {
@@ -207,11 +233,20 @@ export default {
   cursor: pointer;
   position: relative;
   transition: 0.2s;
-
-  height: calc((100vh - 150px) / 7);
   min-height: 45px;
-
+  position: relative;
+  overflow: hidden;
 }
+.day-photo {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+
 
 .day:hover {
   background: #ffe2e6;
@@ -236,7 +271,9 @@ export default {
 .template-box {
   width: 28%;
   min-width: 220px;
-  overflow-y: auto;
+  /*height: calc(100% - 150px);*/
+  overflow-y: auto; /* ⬅ 오직 여기만 스크롤 활성화 */
+  overflow-x: hidden;
 }
 
 .section-title {
@@ -277,14 +314,26 @@ export default {
 }
 
 @keyframes fadeInDrop {
-  0% { opacity: 0; transform: translateY(-20px); }
-  100% { opacity: 1; transform: translateY(0); }
+  0% {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes float {
-  0% { transform: translateY(0); }
-  50% { transform: translateY(-5px); }
-  100% { transform: translateY(0); }
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+  100% {
+    transform: translateY(0);
+  }
 }
 
 </style>
