@@ -54,6 +54,7 @@
 </template>
 <script>
 import RecordHeaderBar from '@/pages/DailyWorkoutRecord/RecordHeaderBar.vue'
+import dailyWorkoutRecordApi from '@/api/dailyWorkoutRecordApi.js'
 
 export default {
   name: 'CalendarPage',
@@ -69,10 +70,7 @@ export default {
       weekdays: ['월', '화', '수', '목', '금', '토', '일'],
       templateList: [],
 
-      photos: {
-        5: '/uploads/sample.jpg',
-        10: '/uploads/another.jpg',
-      },
+      photos: {},
     }
   },
 
@@ -84,6 +82,7 @@ export default {
 
   mounted() {
     this.loadTemplates()
+    this.loadPhotos()
   },
 
   methods: {
@@ -129,6 +128,21 @@ export default {
 
       alert(`템플릿이 ${date}에 적용되었어요!`)
     },
+
+    async loadPhotos() {
+      const res = await dailyWorkoutRecordApi.getMonthlyPhotos(this.year, this.month)
+
+      // 결과 예:
+      // [ { day: 5, workoutImg: "workout/a.jpg" }, ... ]
+
+      this.photos = {}
+
+      const list = res.data.data ?? res.data   // ApiResponse 대응
+
+      list.forEach(item => {
+        this.photos[item.day] = `http://localhost:8888/uploads/${item.workoutImg}`
+      })
+    }
   },
 }
 </script>
@@ -220,7 +234,19 @@ export default {
   position: relative;
   transition: 0.2s;
   min-height: 45px;
+  position: relative;
+  overflow: hidden;
 }
+.day-photo {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+
 
 .day:hover {
   background: #ffe2e6;

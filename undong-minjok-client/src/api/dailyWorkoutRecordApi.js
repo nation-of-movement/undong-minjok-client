@@ -29,5 +29,12 @@ export default {
     return axios.post(`${BASE}/${date}/image`, form, {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
+  },
+
+  //월별 사진 조회
+  getMonthlyPhotos(year, month) {
+    return axios.get(`${BASE}/photos`, {
+      params: { year, month }
+    })
   }
 }
