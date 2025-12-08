@@ -1,3 +1,8 @@
+<script setup>
+import { useAuthStore } from "@/stores/authStore";
+const auth = useAuthStore();
+</script>
+
 <template>
   <header class="header">
     <div class="logo">운동의 민족</div>
@@ -6,7 +11,14 @@
       <RouterLink to="/">홈</RouterLink>
       <RouterLink to="/community">커뮤니티</RouterLink>
       <RouterLink to="/challenge">챌린지</RouterLink>
-      <RouterLink to="/login" class="btn-red">로그인</RouterLink>
+      <template v-if="auth.user">
+        <RouterLink to="/profile">내 정보</RouterLink>
+        <button @click="auth.logout" class="btn-red">로그아웃</button>
+      </template>
+
+      <template v-else>
+        <RouterLink to="/login" class="btn-red">로그인</RouterLink>
+      </template>
     </nav>
   </header>
 </template>
@@ -36,8 +48,13 @@
   color: #fff;
 }
 
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
 .nav a {
-  margin-left: 25px;
   text-decoration: none;
   color: #fff;
   font-weight: 400;
@@ -48,5 +65,16 @@
   background: #E60023;
   border-radius: 6px;
   font-weight: 600;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: 0.2s;
+  display: inline-block;
 }
+
+.btn-red:hover {
+  background: #ff0033;
+  transform: translateY(-1px);
+}
+
 </style>

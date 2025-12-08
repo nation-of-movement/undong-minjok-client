@@ -52,16 +52,15 @@ api.interceptors.response.use(
     }
 
 
-    const status = error.response.status;
+    const { status, data } = error.response;
     const url = originalRequest.url || '';
 
-    if (status === 500) {
-      alert("서비스 오류가 발생했습니다.\n관리자에게 문의해주세요.");
-      return Promise.reject(error);
+    if (data?.message) {
+      error.customMessage = data.message;   // ⭐⭐ 이 메시지를 UI에서 사용 가능!
     }
 
-    if (status === 503) {
-      alert("서비스 오류가 발생했습니다.\n관리자에게 문의해주세요.");
+    if (status === 500 || status === 503) {
+      error.customMessage = "서비스 오류가 발생했습니다. 관리자에게 문의해주세요.";
       return Promise.reject(error);
     }
 

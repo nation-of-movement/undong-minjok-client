@@ -1,23 +1,72 @@
 import api from './axios.js';
 
-export async function loginApi(loginId, password) {
-  alert(loginId);
-  alert(password);
-  return api.post('/auth/login', { loginId, password })
+/* ---------------------------
+ * 로그인
+ * --------------------------- */
+export function loginApi(loginId, password) {
+  return api.post('/auth/login', { loginId, password });
 }
 
+/* ---------------------------
+ * 토큰 재발급
+ * --------------------------- */
 export function refreshApi() {
-  return api.post('/auth/token-reissue',
+  return api.post(
+    '/auth/token-reissue',
     {},
-    { skipAuth : true } // request interceptor에게 "Authorization" 속성을 붙이지 않도록 알림
+    { skipAuth: true }
   );
 }
 
+/* ---------------------------
+ * 로그아웃
+ * --------------------------- */
 export function logoutApi() {
   return api.post('/auth/logout');
 }
 
+/* ---------------------------
+ * 회원가입
+ * --------------------------- */
 export function registerApi(payload) {
-  // 회원가입
-  return api.post('/auth/signUp', payload);
+  return api.post('/users', payload);
+}
+
+/* ---------------------------
+ * 중복 체크
+ * --------------------------- */
+export function checkLoginIdApi(loginId) {
+  return api.get('/users/exists/login-id', {
+    params: { loginId }
+  });
+}
+
+export function checkNicknameApi(nickname) {
+  return api.get('/users/exists/nickname', {
+    params: { nickname }
+  });
+}
+
+/* ---------------------------
+ * 이메일 인증번호 발송
+ * --------------------------- */
+export function sendEmailCodeApi({ email, purpose }) {
+  return api.post('/auth/email', { email, purpose });
+}
+
+/* ---------------------------
+ * 이메일 인증번호 검증
+ * --------------------------- */
+export function verifyEmailCodeApi({ email, code, purpose }) {
+  return api.post('/auth/code', { email, code, purpose });
+}
+
+/* ---------------------------
+ * 비밀번호 재설정
+ * --------------------------- */
+export function resetPasswordApi(resetToken, newPassword) {
+  return api.post('/users/reset-password', {
+    resetToken,
+    newPassword
+  });
 }
