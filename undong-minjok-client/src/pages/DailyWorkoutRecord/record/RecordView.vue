@@ -87,7 +87,7 @@
 </template>
 
 <script>
-import DailyWorkoutRecordApi from "@/api/DailyWorkoutRecordApi"
+import DailyWorkoutRecordApi from "@/api/dailyWorkoutRecordApi.js"
 
 export default {
   name: "RecordPage",

@@ -1,39 +1,43 @@
 <template>
   <div class="page">
-    <h1 class="title">오늘도 힘내봐요! 💪<br> 연도 & 월을 골라주세요</h1>
 
-    <!-- 연도 선택 -->
-    <div class="year-selector">
-      <button
-        v-for="y in years"
-        :key="y"
-        class="year-btn"
-        :class="{ active: y === selectedYear }"
-        @click="selectedYear = y"
-      >
-        {{ y }}년
-      </button>
-    </div>
+    <RecordHeaderBar />
 
-    <!-- 월 선택 -->
-    <div class="month-grid">
-      <div
-        v-for="m in 12"
-        :key="m"
-        class="month-card"
-        @click="goToCalendar(m)"
-      >
-        {{ m }}월
+    <div class="content">
+      <h1 class="title">오늘도 힘내봐요! 💪<br> 연도 & 월을 골라주세요</h1>
+
+      <!-- 연도 선택 -->
+      <div class="year-selector">
+        <button
+          v-for="y in years"
+          :key="y"
+          class="year-btn"
+          :class="{ active: y === selectedYear }"
+          @click="selectedYear = y"
+        >
+          {{ y }}년
+        </button>
+      </div>
+
+      <!-- 월 선택 -->
+      <div class="month-grid">
+        <div
+          v-for="m in 12"
+          :key="m"
+          class="month-card"
+          @click="goToCalendar(m)"
+        >
+          {{ m }}월
+        </div>
       </div>
     </div>
-
   </div>
 </template>
-
 
 <script setup>
 import { ref } from "vue";
 import { useRouter } from "vue-router";
+import RecordHeaderBar from '@/pages/DailyWorkoutRecord/RecordHeaderBar.vue'
 
 const router = useRouter();
 
@@ -52,16 +56,18 @@ function goToCalendar(month) {
 }
 </script>
 
-
 <style scoped>
 .page {
-  padding: 60px 20px;
-  min-height: 100vh;
   background: #000;
+  height: 100vh;
+  overflow: hidden;
   color: white;
   font-family: "Pretendard", sans-serif;
-  text-align: center;
+}
 
+.content {
+  padding-top: 80px;
+  text-align: center;
 
   max-width: 900px;
   margin: 0 auto;
@@ -73,11 +79,9 @@ function goToCalendar(month) {
   font-weight: 700;
   margin-bottom: 35px;
   line-height: 1.5;
-  opacity: 0.95;
-  color: #fff;
 }
 
-/*연도 선택 버튼 */
+/* 연도 선택 */
 .year-selector {
   display: flex;
   justify-content: center;
@@ -88,7 +92,7 @@ function goToCalendar(month) {
 
 .year-btn {
   padding: 8px 20px;
-  background: rgba(255, 255, 255, 0.12); /* 좀 더 밝게 */
+  background: rgba(255, 255, 255, 0.12);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 8px;
   font-size: 16px;
@@ -109,31 +113,28 @@ function goToCalendar(month) {
   border-color: #E60023;
 }
 
-/*  월 선택 그리드 */
+/* 월 카드 그리드 */
 .month-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 18px;
-  padding: 10px 20px;
+  padding: 0 20px;
 }
 
-/*  월 카드  */
+/* 월 카드 */
 .month-card {
-  background: rgb(255, 255, 255); /* 기존보다 훨씬 밝게 */
+  background: #ffffff;
   padding: 18px 0;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: black;
   font-size: 18px;
-  font-weight: 500;
   cursor: pointer;
-  transition: 0.25s;
-  color: #000000;
+  transition: 0.3s;
 }
 
 .month-card:hover {
   transform: translateY(-4px);
-  background: rgb(230, 0, 35);
-  color: #ffffff;
-  box-shadow: 0 8px 18px rgba(255, 0, 40, 0.22);
+  background: #E60023;
+  color: white;
 }
 </style>
