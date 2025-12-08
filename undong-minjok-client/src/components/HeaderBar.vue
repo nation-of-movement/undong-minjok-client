@@ -6,6 +6,7 @@
       <RouterLink to="/">홈</RouterLink>
       <RouterLink to="/community">커뮤니티</RouterLink>
       <RouterLink to="/challenge">챌린지</RouterLink>
+      <RouterLink to="/payments">결제</RouterLink>
       <RouterLink to="/login" class="btn-red">로그인</RouterLink>
     </nav>
   </header>
