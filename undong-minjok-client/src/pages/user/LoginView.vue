@@ -23,7 +23,7 @@
 
         <div class="extra-links">
           <RouterLink to="/signup">회원가입</RouterLink>
-          <RouterLink to="/forgot">비밀번호 찾기</RouterLink>
+          <RouterLink to="/password/search">비밀번호 찾기</RouterLink>
         </div>
 
       </form>
