@@ -7,6 +7,7 @@ import {
   updateNicknameApi,
   updateBioApi,
   uploadProfileImageApi,
+  deleteUserApi,
 } from '@/api/userApi'
 
 const auth = useAuthStore()
@@ -49,10 +50,12 @@ const fetchMyInfo = async () => {
     profileImageUrl.value = IMAGE_BASE_URL + data.profileImagePath
 
     // auth.user에도 덮어쓰기
-    auth.user = {
-      ...auth.user,
-      ...data,
-    }
+    auth.$patch({
+      user: {
+        ...auth.user,
+        ...data
+      }
+    })
   } catch (e) {
     console.error('내 정보 로드 실패', e)
   } finally {
@@ -69,9 +72,14 @@ onMounted(() => {
  * ================================ */
 const savingNickname = ref(false)
 const handleSaveNickname = async () => {
-  if (!nickname.value.trim()) {
+
+  const newNick = nickname.value.trim()
+
+  if (newNick === userInfo.value.nickname) {
+    alert('변경된 내용이 없습니다.')
     return
   }
+  if (!newNick) return
 
   savingNickname.value = true
   try {
@@ -91,6 +99,13 @@ const handleSaveNickname = async () => {
  * ================================ */
 const savingBio = ref(false)
 const handleSaveBio = async () => {
+  const newBio = bio.value.trim()
+
+  if (newBio === (userInfo.value.bio || '')) {
+    alert('변경된 내용이 없습니다.')
+    return
+  }
+
   savingBio.value = true
   try {
     await updateBioApi(bio.value)
@@ -130,6 +145,9 @@ const handleFileChange = async (event) => {
   }
 }
 
+/* ================================
+ * 수정 상태 관리
+ * ================================ */
 const editingNickname = ref(false)
 const tempNickname = ref('')
 
@@ -154,6 +172,23 @@ const startEditBio = () => {
 const cancelEditBio = () => {
   editingBio.value = false
   bio.value = tempBio.value
+}
+
+const showDeleteModal = ref(false)
+
+const confirmDeleteUser = async () => {
+  try {
+    await deleteUserApi()
+    alert("회원 탈퇴가 완료되었습니다.")
+
+    auth.logout()
+
+    window.location.replace("/")
+    window.location.reload();
+
+  } catch (e) {
+    alert("탈퇴 실패")
+  }
 }
 
 </script>
@@ -238,20 +273,26 @@ const cancelEditBio = () => {
           <!-- 자기소개 -->
           <div class="field">
             <label>자기소개</label>
-            <textarea
-              v-model="bio"
-              class="textarea"
-              maxlength="200"
-            ></textarea>
-            <div class="field-footer" v-if="editingBio">
-              <button class="btn-red" @click="handleSaveBio">저장</button>
-              <button class="btn-outline" @click="cancelEditBio">취소</button>
-            </div>
+            <textarea v-model="bio" class="textarea" maxlength="200"></textarea>
 
-            <div class="field-footer" v-else>
-              <button class="btn-outline" @click="startEditBio">수정</button>
+            <div class="field-footer-between">
+              <!-- 왼쪽: 탈퇴 버튼 -->
+              <button class="delete-account-btn" @click="showDeleteModal = true">
+                회원 탈퇴
+              </button>
+
+              <!-- 오른쪽: 수정/저장/취소 -->
+              <div v-if="editingBio" class="btn-group">
+                <button class="btn-red" @click="handleSaveBio">저장</button>
+                <button class="btn-outline" @click="cancelEditBio">취소</button>
+              </div>
+
+              <div v-else>
+                <button class="btn-outline" @click="startEditBio">수정</button>
+              </div>
             </div>
           </div>
+
         </div>
 
         <!-- 다른 탭 -->
@@ -273,9 +314,44 @@ const cancelEditBio = () => {
     </div>
 
     <div v-else class="loading-text">불러오는 중...</div>
+
+    <!-- ================= 모달 ================= -->
+    <div class="modal-backdrop" v-if="showDeleteModal">
+      <div class="modal">
+        <h3>정말 탈퇴하시겠습니까?</h3>
+        <p>탈퇴 후 정보는 복구할 수 없습니다.</p>
+
+        <div class="modal-actions">
+          <button class="btn-outline" @click="showDeleteModal = false">취소</button>
+          <button class="btn-red" @click="confirmDeleteUser">탈퇴</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 <style scoped>
+.field-footer-between {
+  margin-top: 10px;
+  display: flex;
+  justify-content: space-between; /* 🔥 양 끝으로 배치 */
+  align-items: center;
+}
+
+.delete-account-btn {
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: transparent;
+  border: 1px solid rgba(255, 80, 80, 0.7);
+  color: #ff4d4d;
+  font-size: 13px;
+  cursor: pointer;
+  transition: 0.15s;
+}
+
+.delete-account-btn:hover {
+  background: rgba(255, 80, 80, 0.1);
+}
+
 .mypage {
   max-width: 1100px;
   margin: 0 auto;
@@ -524,6 +600,70 @@ const cancelEditBio = () => {
 /* 숨김 파일 input */
 .file-input-hidden {
   display: none;
+}
+
+.delete-wrapper {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-start; /* 🔥 왼쪽 정렬 */
+}
+
+.delete-account-btn {
+  padding: 8px 14px; /* 수정/취소 버튼과 동일 */
+  border-radius: 10px;
+  background: transparent;
+  border: 1px solid rgba(255, 80, 80, 0.7);
+  color: #ff4d4d;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  width: auto !important;
+}
+
+
+.delete-account-btn:hover {
+  background: rgba(255, 80, 80, 0.1);
+}
+
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.modal {
+  background: #1a1a1a;
+  padding: 24px 28px;
+  border-radius: 14px;
+  width: 320px;
+  text-align: center;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.modal h3 {
+  font-size: 18px;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.modal p {
+  font-size: 14px;
+  opacity: 0.8;
+  margin-bottom: 20px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
 }
 
 /* ================= 반응형 ================= */
