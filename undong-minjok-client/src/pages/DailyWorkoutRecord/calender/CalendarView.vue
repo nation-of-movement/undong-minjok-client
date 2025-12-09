@@ -55,6 +55,10 @@
           <button class="apply-btn" @click="applyTemplate(tpl.templateId)">
             적용하기
           </button>
+
+          <button class="delete-btn" @click="deleteTemplate(tpl.templateId)">
+            삭제하기
+          </button>
         </div>
       </div>
     </div>
@@ -149,8 +153,20 @@ export default {
       list.forEach(item => {
         this.photos[item.day] = `http://localhost:8888/uploads/${item.workoutImg}`
       })
+    },
+
+    async deleteTemplate(templateId) {
+      const confirmDelete = confirm("정말 삭제하시겠어요?");
+      if (!confirmDelete) return;
+
+      await templateStorageApi.deleteFromStorage(templateId);
+
+      // UI 업데이트
+      this.templateList = this.templateList.filter(t => t.templateId !== templateId);
+
+      alert("삭제되었습니다!");
     }
-  },
+  }
 }
 </script>
 <style scoped>
@@ -345,6 +361,23 @@ export default {
 .apply-btn:hover {
   background: #ff3355;
 }
+
+.delete-btn {
+  margin-top: 6px;
+  width: 100%;
+  padding: 8px;
+  border: none;
+  border-radius: 8px;
+  background: #444;
+  color: white;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.delete-btn:hover {
+  background: #222;
+}
+
 
 
 @keyframes fadeInDrop {
