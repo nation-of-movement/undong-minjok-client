@@ -1,12 +1,14 @@
 <template>
   <div class="page">
-
     <RecordHeaderBar />
 
     <div class="content">
-      <h1 class="title">오늘도 힘내봐요! 💪<br> 연도 & 월을 골라주세요</h1>
+      <h1 class="title">
+        오늘도 힘내봐요!<br />
+        연도 & 월을 골라주세요
+      </h1>
 
-      <!-- 연도 선택 -->
+      <!-- 연도 선택 영역 -->
       <div class="year-selector">
         <button
           v-for="y in years"
@@ -19,41 +21,43 @@
         </button>
       </div>
 
-      <!-- 월 선택 -->
+      <!-- 월 선택 카드 -->
       <div class="month-grid">
-        <div
-          v-for="m in 12"
-          :key="m"
-          class="month-card"
-          @click="goToCalendar(m)"
-        >
-          {{ m }}월
-        </div>
+        <div v-for="m in 12" :key="m" class="month-card" @click="goToCalendar(m)">{{ m }}월</div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from "vue";
-import { useRouter } from "vue-router";
-import RecordHeaderBar from '@/pages/DailyWorkoutRecord/RecordHeaderBar.vue'
+  import { ref } from 'vue'
+  import { useRouter } from 'vue-router'
+  import RecordHeaderBar from '@/pages/DailyWorkoutRecord/RecordHeaderBar.vue'
 
-const router = useRouter();
+  const router = useRouter()
 
-const currentYear = new Date().getFullYear();
-const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
+  // 현재 연도 계산
+  const currentYear = new Date().getFullYear()
 
-const selectedYear = ref(currentYear);
+  // 선택 가능한 연도 목록 생성
+  const years = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i)
 
-function goToCalendar(month) {
-  const monthStr = String(month).padStart(2, "0");
+  // 현재 선택된 연도 (기본값: 올해)
+  const selectedYear = ref(currentYear)
 
-  router.push({
-    name: "Calendar",
-    params: { year: selectedYear.value, month: monthStr }
-  });
-}
+
+  // 월 선택 시 해당 연·월의 캘린더 페이지로 이동
+  function goToCalendar(month) {
+    const monthStr = String(month).padStart(2, '0')
+
+    router.push({
+      name: 'Calendar',
+      params: {
+        year: selectedYear.value,
+        month: monthStr,
+      },
+    })
+  }
 </script>
 
 <style scoped>
@@ -62,7 +66,7 @@ function goToCalendar(month) {
   height: 100vh;
   overflow: hidden;
   color: white;
-  font-family: "Pretendard", sans-serif;
+  font-family: 'Pretendard', sans-serif;
 }
 
 .content {
@@ -102,15 +106,15 @@ function goToCalendar(month) {
 }
 
 .year-btn:hover {
-  border-color: #E60023;
-  color: #E60023;
+  border-color: #e60023;
+  color: #e60023;
   background: rgba(230, 0, 35, 0.08);
 }
 
 .year-btn.active {
-  background: #E60023;
+  background: #e60023;
   color: #fff;
-  border-color: #E60023;
+  border-color: #e60023;
 }
 
 /* 월 카드 그리드 */
@@ -134,7 +138,7 @@ function goToCalendar(month) {
 
 .month-card:hover {
   transform: translateY(-4px);
-  background: #E60023;
+  background: #e60023;
   color: white;
 }
 </style>

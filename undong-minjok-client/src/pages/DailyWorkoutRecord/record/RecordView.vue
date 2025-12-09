@@ -1,9 +1,11 @@
 <template>
   <RecordHeaderBar />
+
   <div class="page-wrapper">
-    <h1 class="page-title">{{ date }} 오늘도 성장하는 중 🔥</h1>
+    <h1 class="page-title">{{ date }} 오늘도 성장하는 중</h1>
+
     <div class="record-wrapper">
-      <!-- 좌측 테이블 -->
+      <!-- 운동 기록 테이블 -->
       <div class="table-box">
         <table>
           <thead>
@@ -22,7 +24,6 @@
           <tr v-for="(row, idx) in rows" :key="idx">
             <td><input v-model="row.exerciseName" /></td>
             <td><input v-model="row.part" /></td>
-
             <td><input type="number" v-model.number="row.reps" /></td>
             <td><input type="number" v-model.number="row.weight" /></td>
             <td><input type="number" v-model.number="row.duration" /></td>
@@ -44,17 +45,17 @@
           </tbody>
         </table>
 
-        <button class="add-row-btn" @click="addRow()">+ 행 추가</button>
+        <button class="add-row-btn" @click="addRow">+ 행 추가</button>
       </div>
 
-      <!-- 이미지 업로드 -->
+      <!-- 이미지 업로드 박스 -->
       <div class="img-box">
         <div class="preview" @click="triggerFileSelect">
           <img v-if="previewImg" :src="previewImg" />
-          <span v-else>📸 사진 업로드 (클릭)</span>
+          <span v-else>사진 업로드 (클릭)</span>
         </div>
 
-        <!-- 숨겨진 실제 파일 업로드 input -->
+        <!-- 파일 업로드 -->
         <input
           type="file"
           ref="fileInput"
@@ -66,11 +67,11 @@
 
     <button class="save-btn" @click="saveRecord">저장하기</button>
 
-    <!-- 🔥 기구 검색 모달 (백엔드 기반으로 변경됨)-->
+    <!-- 운동기구 선택 모달 -->
     <div class="modal-bg" v-show="modalOpen" @click.self="closeModal">
       <div class="modal">
 
-        <!-- ⭐ Step 1: 부위 선택 -->
+        <!--운동 부위 선택 -->
         <div v-if="!selectedPartId">
           <div class="modal-title">운동 부위를 선택해주세요</div>
 
@@ -84,7 +85,7 @@
           </div>
         </div>
 
-        <!-- ⭐ Step 2: 운동기구 선택 -->
+        <!-- 운동기구 선택 -->
         <div v-else>
           <div class="modal-title">
             {{ selectedPartName }} 관련 운동기구
@@ -109,119 +110,142 @@
 </template>
 
 <script>
-import DailyWorkoutRecordApi from '@/api/dailyWorkoutRecordApi.js'
-import RecordHeaderBar from '@/pages/DailyWorkoutRecord/RecordHeaderBar.vue'
-import EquipmentApi from '@/api/equipmentApi.js'
-import PartApi from '@/api/partApi.js'
+import DailyWorkoutRecordApi from "@/api/dailyWorkoutRecordApi.js";
+import RecordHeaderBar from "@/pages/DailyWorkoutRecord/RecordHeaderBar.vue";
+import EquipmentApi from "@/api/equipmentApi.js";
+import PartApi from "@/api/partApi.js";
 
 export default {
-  name: 'RecordPage',
+  name: "RecordPage",
   components: { RecordHeaderBar },
 
   data() {
     return {
+      // URL에서 전달받은 날짜
       date: this.$route.query.date,
 
+      // 기록 ID (처음 생성 시 백엔드에서 반환)
       recordId: null,
+
+      // 업로드된 이미지 미리보기 경로
       previewImg: null,
 
+      // 운동 기록 행 리스트
       rows: [],
 
+      // 모달 열림 여부
       modalOpen: false,
+
+      // 어떤 행에서 기구 선택 중인지 저장
       modalRowIndex: null,
 
-      // ⭐ 기존 EQUIPMENTS 제거 (백엔드 방식으로 교체)
-      partList: [],          // 운동 부위 목록
-      selectedPartId: null,  // 선택된 부위 ID
-      selectedPartName: null,// 선택된 부위 이름
-      equipmentList: [],     // 선택된 부위의 운동기구 리스트
-    }
+      // 운동 부위 목록
+      partList: [],
+
+      // 현재 선택된 부위 ID
+      selectedPartId: null,
+
+      // 현재 선택된 부위 이름
+      selectedPartName: null,
+
+      // 선택된 부위에 해당하는 운동기구 목록
+      equipmentList: [],
+    };
   },
 
   async created() {
-    await this.initRecord();
-    await this.loadParts();
+    await this.initRecord(); // 오늘 날짜에 해당하는 기록 생성 또는 조회
+    await this.loadParts();  // 운동 부위 목록 불러오기
   },
 
-
   methods: {
-    // ⭐ 부위 목록 로딩
-    async loadParts() {
-      const res = await PartApi.getParts();
-      this.partList = res.data.data ?? res.data;
-    },
 
+    //기록 존재 여부 확인 후 새로 생성 또는 기존 기록 표시
     async initRecord() {
-      const res = await DailyWorkoutRecordApi.initRecord(this.date)
-      this.recordId = res.data.recordId
+      const res = await DailyWorkoutRecordApi.initRecord(this.date);
+      this.recordId = res.data.recordId;
 
       if (!res.data.isNew) {
-        await this.loadExistingRecord()
+        await this.loadExistingRecord();
       }
     },
 
+    // 기존에 저장된 운동 기록 불러오기
     async loadExistingRecord() {
-      const res = await DailyWorkoutRecordApi.getRecord(this.date)
-      const data = res.data
+      const res = await DailyWorkoutRecordApi.getRecord(this.date);
+      const data = res.data;
 
+      // 기존 이미지 적용
       if (data.workoutImg) {
-        this.previewImg = `http://localhost:8888/uploads/${data.workoutImg}`
+        this.previewImg = `http://localhost:8888/uploads/${data.workoutImg}`;
       }
 
+      // 기존 운동 리스트 매핑
       this.rows = data.exercises.map((e) => ({
         exerciseName: e.exerciseName,
         part: e.exercisePart,
         reps: e.reps,
         weight: e.weight,
         duration: e.duration,
-        equipmentName: e.equipmentName ?? '',
+        equipmentName: e.equipmentName ?? "",
         equipmentId: e.equipmentId ?? null,
-      }))
+      }));
     },
 
+    // 이미지 업로드 input 열기 (커스텀 클릭)
     triggerFileSelect() {
       this.$refs.fileInput.click();
     },
 
+    //새로운 행 추가
     addRow() {
       this.rows.push({
-        exerciseName: '',
-        part: '',
+        exerciseName: "",
+        part: "",
         reps: null,
         weight: null,
         duration: null,
-        equipmentName: '',
+        equipmentName: "",
         equipmentId: null,
-      })
+      });
     },
 
+    //선택한 행 삭제
     deleteRow(idx) {
-      this.rows.splice(idx, 1)
+      this.rows.splice(idx, 1);
     },
 
+    //이미지 선택 시 미리보기
     async onImageSelect(e) {
-      const file = e.target.files[0]
-      if (!file) return
+      const file = e.target.files[0];
+      if (!file) return;
 
-      this.previewImg = URL.createObjectURL(file)
+      this.previewImg = URL.createObjectURL(file);
 
-      await DailyWorkoutRecordApi.uploadImage(this.date, file)
+      await DailyWorkoutRecordApi.uploadImage(this.date, file);
     },
 
-    // 🔥 모달 열기
+    //운동 부위 목록 백엔드에서 조회
+    async loadParts() {
+      const res = await PartApi.getParts();
+      this.partList = res.data.data ?? res.data;
+    },
+
+    //운동기구 선택 모달 열기
     openModal(index) {
       this.modalRowIndex = index;
-      this.selectedPartId = null; // ⭐ 초기화
+      this.selectedPartId = null;
       this.selectedPartName = null;
       this.equipmentList = [];
       this.modalOpen = true;
     },
 
+    //운동기구 선택 모달 닫기
     closeModal() {
-      this.modalOpen = false
+      this.modalOpen = false;
     },
 
-    // 🔥 Step1: 부위 선택 → 운동기구 가져오기
+    //부위 선택 -> 해당 부위 운동기구 보여주기
     async selectPart(part) {
       this.selectedPartId = part.id;
       this.selectedPartName = part.name;
@@ -230,23 +254,25 @@ export default {
       this.equipmentList = res.data.data ?? res.data;
     },
 
+    //뒤로 돌아가기(운동 기구 -> 부위 선택)
     resetPart() {
       this.selectedPartId = null;
       this.selectedPartName = null;
       this.equipmentList = [];
     },
 
-    // 🔥 Step2: 기구 선택 → 자동 매핑
+    //기구 선택 시 해당 행에 자동 적용
     selectEquipment(eq) {
       const row = this.rows[this.modalRowIndex];
 
       row.equipmentName = eq.name;
       row.equipmentId = eq.id;
-      row.part = eq.partName;   // ⭐ 부위 자동 매핑
+      row.part = eq.partName;
 
       this.modalOpen = false;
     },
 
+    //기록 저장
     async saveRecord() {
       const payload = {
         date: this.date,
@@ -259,16 +285,14 @@ export default {
           equipmentId: r.equipmentId,
           orderIndex: i,
         })),
-      }
+      };
 
-      await DailyWorkoutRecordApi.saveRecord(payload)
-      alert('저장 완료!')
+      await DailyWorkoutRecordApi.saveRecord(payload);
+      alert("저장 완료!");
     },
   },
-}
+};
 </script>
-
-
 
 <style scoped>
 .page-wrapper {
