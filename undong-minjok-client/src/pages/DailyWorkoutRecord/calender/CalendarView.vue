@@ -43,10 +43,18 @@
           v-for="tpl in templateList"
           :key="tpl.templateId"
           class="template-card"
-          @click="applyTemplate(tpl.templateId)"
         >
+          <img
+            v-if="tpl.imgPath"
+            :src="`http://localhost:8888/uploads/${tpl.imgPath}`"
+            class="template-thumbnail"
+          />
           <div class="template-title">{{ tpl.templateName }}</div>
           <div class="template-meta">작성자: {{ tpl.creatorNickname ?? '익명' }}</div>
+
+          <button class="apply-btn" @click="applyTemplate(tpl.templateId)">
+            적용하기
+          </button>
         </div>
       </div>
     </div>
@@ -55,6 +63,7 @@
 <script>
 import RecordHeaderBar from '@/pages/DailyWorkoutRecord/RecordHeaderBar.vue'
 import dailyWorkoutRecordApi from '@/api/dailyWorkoutRecordApi.js'
+import templateStorageApi from '@/api/templateStorageApi.js'
 
 export default {
   name: 'CalendarPage',
@@ -108,8 +117,8 @@ export default {
     },
 
     async loadTemplates() {
-      const res = await fetch('/api/v1/templates/storage')
-      this.templateList = await res.json()
+      const res = await templateStorageApi.getStorageList()
+      this.templateList = res.data.data ?? res.data
     },
 
     async applyTemplate(templateId) {
@@ -122,9 +131,7 @@ export default {
         this.selectedDay,
       ).padStart(2, '0')}`
 
-      await fetch(`/api/v1/templates/storage/${templateId}/apply?date=${date}`, {
-        method: 'POST',
-      })
+      await templateStorageApi.applyTemplate(templateId, date)
 
       alert(`템플릿이 ${date}에 적용되었어요!`)
     },
@@ -288,6 +295,15 @@ export default {
   margin-bottom: 10px;
 }
 
+.template-thumbnail {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  background: #f3f3f3;
+}
+
 .template-card {
   padding: 12px;
   margin-bottom: 12px;
@@ -300,7 +316,7 @@ export default {
 .template-card:hover {
   background: #ffe2e6;
   border-color: #e60023;
-  transform: translateY(-2px);
+  transform: translateY(-1px);
 }
 
 .template-title {
@@ -312,6 +328,24 @@ export default {
   font-size: 11px;
   opacity: 0.7;
 }
+
+.apply-btn {
+  margin-top: 8px;
+  width: 100%;
+  padding: 8px;
+  border: none;
+  border-radius: 8px;
+  background: #e60023;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.apply-btn:hover {
+  background: #ff3355;
+}
+
 
 @keyframes fadeInDrop {
   0% {
