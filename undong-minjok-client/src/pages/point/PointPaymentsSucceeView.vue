@@ -1,7 +1,7 @@
 <script setup>
 import { useRoute, useRouter } from 'vue-router'
-import { ref } from 'vue'
-import { paymentsApi } from '@/api/paymentsApi.js'
+import {onMounted, ref } from 'vue'
+import { paymentsConfirmApi } from '@/api/paymentsApi.js'
 
 const router = useRouter();
 const route = useRoute();
@@ -10,7 +10,7 @@ const paymentKey = route.query.paymentKey; // key
 const amount = route.query.amount; // 그액
 console.log(route);
 
-async function comfirm() {
+async function confirm() {
 
   let payload = {
     orderId : orderId,
@@ -20,7 +20,7 @@ async function comfirm() {
 
   try {
 
-    await paymentsApi(payload);
+      await paymentsConfirmApi(payload);
 
   } catch(e) {
     console.log(e)
@@ -28,7 +28,9 @@ async function comfirm() {
 
 }
 
-
+onMounted(async () => {
+  await confirm();
+})
 
 </script>
 

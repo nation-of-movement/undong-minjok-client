@@ -1,6 +1,10 @@
 import { createRouter, createWebHistory } from "vue-router";
 import DefaultLayout from "@/layouts/DefaultLayout.vue";
 import HomeView from "@/pages/HomeView.vue";
+import { useAuthStore } from '@/stores/authStore';
+import PointPaymentsView from '@/pages/point/PointPaymentsView.vue'
+import PointPaymentsSucceeView from "@/pages/point/PointPaymentsSucceeView.vue";
+import PointPaymentsFailView from "@/pages/point/PointPaymentsFailView.vue";
 import CalendarView from '@/pages/calender/CalendarView.vue'
 import MonthSelectView from '@/pages/calender/MonthSelectView.vue'
 import RecordView from '@/pages/record/RecordView.vue'
@@ -54,7 +58,7 @@ const routes = [
     path: "/fail",
     name: "Fail",
     component: PointPaymentsFailView
-  },
+  }
 
   // -------------------- 템플릿 상세 페이지 --------------------
   {

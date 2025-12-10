@@ -134,7 +134,6 @@ async function requestPayment() {
     , amount : amount.value
   }
 
-
   try {
     // orderId, amount 서버 임시로 저장
     await paymentsPrepareApi(payload);
