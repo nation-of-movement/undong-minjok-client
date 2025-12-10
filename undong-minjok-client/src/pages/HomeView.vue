@@ -48,13 +48,6 @@
         <div class="tab">🦵 하체</div>
         <div class="tab">⚡ 전신</div>
       </div>
-
-      <div class="filters">
-        <div class="chip highlight">무료만 보기</div>
-        <div class="chip">초보자용</div>
-        <div class="chip">헬스장</div>
-        <div class="chip">홈트</div>
-      </div>
     </div>
 
     <!-- TEMPLATE GRID (3x2 per page) -->
@@ -310,7 +303,7 @@ export default {
   padding: 0 5%;
   margin-top: 20px;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
 }
 .tabs {
