@@ -1,134 +1,187 @@
 <template>
-  <div class="page-wrapper">
+  <RecordHeaderBar />
 
-    <h1>{{ date }} 운동 기록장</h1>
+  <div class="page-wrapper">
+    <h1 class="page-title">{{ date }} 오늘도 성장하는 중</h1>
 
     <div class="record-wrapper">
-
-      <!-- 좌측 테이블 -->
+      <!-- 운동 기록 테이블 -->
       <div class="table-box">
         <table>
           <thead>
           <tr>
+            <th style="width: 40px;">↕</th>
             <th>운동명</th>
             <th>부위</th>
-            <th>횟수</th>
-            <th>중량</th>
-            <th>시간</th>
             <th>기구</th>
-            <th>삭제</th>
+            <th>횟수</th>
+            <th>중량(kg)</th>
+            <th>시간(분)</th>
+            <th></th>
           </tr>
           </thead>
 
-          <tbody>
-          <tr v-for="(row, idx) in rows" :key="idx">
-            <td><input v-model="row.exerciseName" /></td>
-            <td><input v-model="row.part" /></td>
+          <draggable
+            v-model="rows"
+            item-key="id"
+            tag="tbody"
+            handle=".drag-handle"
+          >
+            <template #item="{ element: row, index: idx }">
+              <tr :key="row.id">
 
-            <td><input type="number" v-model.number="row.reps" /></td>
-            <td><input type="number" v-model.number="row.weight" /></td>
-            <td><input type="number" v-model.number="row.duration" /></td>
+                <!-- 드래그 핸들 버튼 추가 -->
+                <td class="drag-handle" style="cursor: grab; text-align:center; font-size:18px;">
+                  ≡
+                </td>
 
-            <td>
-              <input
-                class="equipment-input"
-                readonly
-                placeholder="기구 선택"
-                v-model="row.equipmentName"
-                @click="openModal(idx)"
-              />
-            </td>
+                <td><input v-model="row.exerciseName" /></td>
+                <td><input v-model="row.part" /></td>
+                <td>
+                  <input
+                    class="equipment-input"
+                    readonly
+                    placeholder="기구 선택"
+                    v-model="row.equipmentName"
+                    @click="openModal(idx)"
+                  />
+                </td>
+                <td><input type="number" v-model.number="row.reps" /></td>
+                <td><input type="number" v-model.number="row.weight" /></td>
+                <td><input type="number" v-model.number="row.duration" /></td>
 
-            <td>
-              <button class="delete-btn" @click="deleteRow(idx)">×</button>
-            </td>
-          </tr>
-          </tbody>
+
+
+                <td>
+                  <button class="delete-btn" @click="deleteRow(idx)">×</button>
+                </td>
+              </tr>
+            </template>
+          </draggable>
         </table>
 
-        <button class="add-row-btn" @click="addRow()">+ 행 추가</button>
+        <button class="add-row-btn" @click="addRow">+ 행 추가</button>
       </div>
 
-      <!-- 이미지 업로드 -->
+      <!-- 이미지 업로드 박스 -->
       <div class="img-box">
-        <div class="preview">
+        <div class="preview" @click="triggerFileSelect">
           <img v-if="previewImg" :src="previewImg" />
-          <span v-else>사진 업로드</span>
+          <span v-else>사진 업로드 (클릭)</span>
         </div>
 
-        <input type="file" @change="onImageSelect" />
+        <!-- 파일 업로드 -->
+        <input
+          type="file"
+          ref="fileInput"
+          class="hidden-file-input"
+          @change="onImageSelect"
+        />
       </div>
-
     </div>
 
     <button class="save-btn" @click="saveRecord">저장하기</button>
 
-    <!-- 기구 검색 모달 -->
+    <!-- 운동기구 선택 모달 -->
     <div class="modal-bg" v-show="modalOpen" @click.self="closeModal">
       <div class="modal">
-        <div class="modal-title">부위 입력 → 운동기구 추천</div>
 
-        <input class="search-input" v-model="partKeyword" placeholder="예: 가슴, 어깨, 등">
+        <!--운동 부위 선택 -->
+        <div v-if="!selectedPartId">
+          <div class="modal-title">운동 부위를 선택해주세요</div>
 
-        <div>
           <div
             class="equipment-item"
-            v-for="item in filteredEquipments"
-            :key="item"
-            @click="selectEquipment(item)"
+            v-for="p in partList"
+            :key="p.id"
+            @click="selectPart(p)"
           >
-            {{ item }}
+            {{ p.name }}
           </div>
         </div>
+
+        <!-- 운동기구 선택 -->
+        <div v-else>
+          <div class="modal-title">
+            {{ selectedPartName }} 관련 운동기구
+            <button type="button" class="back-btn" @click="resetPart">
+              ← 뒤로
+            </button>
+          </div>
+
+          <div
+            class="equipment-item"
+            v-for="eq in equipmentList"
+            :key="eq.id"
+            @click="selectEquipment(eq)"
+          >
+            {{ eq.name }}
+          </div>
+        </div>
+
       </div>
     </div>
-
   </div>
 </template>
 
 <script>
-import DailyWorkoutRecordApi from "@/api/dailyWorkoutRecordApi.js"
+import DailyWorkoutRecordApi from "@/api/dailyWorkoutRecordApi.js";
+import RecordHeaderBar from "@/pages/DailyWorkoutRecord/RecordHeaderBar.vue";
+import EquipmentApi from "@/api/equipmentApi.js";
+import PartApi from "@/api/partApi.js";
+import draggable from "vuedraggable";
+
 
 export default {
   name: "RecordPage",
+  components: { RecordHeaderBar, draggable },
+
+  props: {
+    date: String
+  },
 
   data() {
     return {
-      date: this.$route.query.date,
+      /*// URL에서 전달받은 날짜
+      date: this.$route.query.date,*/
 
+      // 기록 ID (처음 생성 시 백엔드에서 반환)
       recordId: null,
+
+      // 업로드된 이미지 미리보기 경로
       previewImg: null,
 
+      // 운동 기록 행 리스트
       rows: [],
 
+      // 모달 열림 여부
       modalOpen: false,
-      partKeyword: "",
+
+      // 어떤 행에서 기구 선택 중인지 저장
       modalRowIndex: null,
 
-      EQUIPMENTS: {
-        가슴: ["벤치프레스 머신", "덤벨", "펙덱 플라이", "푸쉬업바"],
-        등: ["랫풀다운", "바벨", "케이블 로우", "풀업바"],
-        어깨: ["덤벨", "숄더프레스 머신", "케이블"],
-        하체: ["스쿼트랙", "레그프레스", "레그익스텐션"],
-        팔: ["EZ바", "덤벨", "케이블"],
-        전신: ["케틀벨", "바벨", "덤벨"],
-      },
+      // 운동 부위 목록
+      partList: [],
+
+      // 현재 선택된 부위 ID
+      selectedPartId: null,
+
+      // 현재 선택된 부위 이름
+      selectedPartName: null,
+
+      // 선택된 부위에 해당하는 운동기구 목록
+      equipmentList: [],
     };
   },
 
-  computed: {
-    filteredEquipments() {
-      if (!this.partKeyword) return [];
-      const key = Object.keys(this.EQUIPMENTS).find(k => k.includes(this.partKeyword));
-      return key ? this.EQUIPMENTS[key] : [];
-    },
-  },
-
   async created() {
-    await this.initRecord();
+    await this.initRecord(); // 오늘 날짜에 해당하는 기록 생성 또는 조회
+    await this.loadParts();  // 운동 부위 목록 불러오기
   },
 
   methods: {
+
+    //기록 존재 여부 확인 후 새로 생성 또는 기존 기록 표시
     async initRecord() {
       const res = await DailyWorkoutRecordApi.initRecord(this.date);
       this.recordId = res.data.recordId;
@@ -138,30 +191,38 @@ export default {
       }
     },
 
+    // 기존에 저장된 운동 기록 불러오기
     async loadExistingRecord() {
       const res = await DailyWorkoutRecordApi.getRecord(this.date);
       const data = res.data;
 
-      // 이미지 절대 경로로 변환
+      // 기존 이미지 적용
       if (data.workoutImg) {
         this.previewImg = `http://localhost:8888/uploads/${data.workoutImg}`;
-        console.log("이미지 URL:", this.previewImg);
-
       }
 
-      this.rows = data.exercises.map(e => ({
+      // 기존 운동 리스트 매핑
+      this.rows = data.exercises.map((e) => ({
+        id: e.id ?? Date.now() + Math.random(),
         exerciseName: e.exerciseName,
-        part: e.exercisePart,  // 정상 매핑
+        part: e.exercisePart,
         reps: e.reps,
         weight: e.weight,
         duration: e.duration,
         equipmentName: e.equipmentName ?? "",
-        equipmentId: null,
+        equipmentId: e.equipmentId ?? null,
       }));
     },
 
+    // 이미지 업로드 input 열기 (커스텀 클릭)
+    triggerFileSelect() {
+      this.$refs.fileInput.click();
+    },
+
+    //새로운 행 추가
     addRow() {
       this.rows.push({
+        id: Date.now() + Math.random(),
         exerciseName: "",
         part: "",
         reps: null,
@@ -172,10 +233,12 @@ export default {
       });
     },
 
+    //선택한 행 삭제
     deleteRow(idx) {
       this.rows.splice(idx, 1);
     },
 
+    //이미지 선택 시 미리보기
     async onImageSelect(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -185,19 +248,54 @@ export default {
       await DailyWorkoutRecordApi.uploadImage(this.date, file);
     },
 
+    //운동 부위 목록 백엔드에서 조회
+    async loadParts() {
+      const res = await PartApi.getParts();
+      this.partList = res.data.data ?? res.data;
+    },
+
+    //운동기구 선택 모달 열기
     openModal(index) {
       this.modalRowIndex = index;
-      this.partKeyword = "";
+      this.selectedPartId = null;
+      this.selectedPartName = null;
+      this.equipmentList = [];
       this.modalOpen = true;
     },
+
+    //운동기구 선택 모달 닫기
     closeModal() {
       this.modalOpen = false;
     },
-    selectEquipment(eq) {
-      this.rows[this.modalRowIndex].equipmentName = eq;
-      this.closeModal();
+
+    //부위 선택 -> 해당 부위 운동기구 보여주기
+    async selectPart(part) {
+      this.selectedPartId = part.id;
+      this.selectedPartName = part.name;
+
+      const res = await EquipmentApi.getEquipmentsByPart(part.id);
+      this.equipmentList = res.data.data ?? res.data;
     },
 
+    //뒤로 돌아가기(운동 기구 -> 부위 선택)
+    resetPart() {
+      this.selectedPartId = null;
+      this.selectedPartName = null;
+      this.equipmentList = [];
+    },
+
+    //기구 선택 시 해당 행에 자동 적용
+    selectEquipment(eq) {
+      const row = this.rows[this.modalRowIndex];
+
+      row.equipmentName = eq.name;
+      row.equipmentId = eq.id;
+      row.part = eq.partName;
+
+      this.modalOpen = false;
+    },
+
+    //기록 저장
     async saveRecord() {
       const payload = {
         date: this.date,
@@ -207,7 +305,7 @@ export default {
           reps: r.reps,
           weight: r.weight,
           duration: r.duration,
-          equipmentId: null, // TODO: 기구 ID 매핑 시 변경
+          equipmentId: r.equipmentId,
           orderIndex: i,
         })),
       };
@@ -221,43 +319,66 @@ export default {
 
 <style scoped>
 .page-wrapper {
-  padding: 40px;
-  background: #F4F4F4;
-  min-height: 100vh;
+  padding: 0px 30px;
+  height: calc(100vh - 100px);
+  background: #000000;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
-h1 {
-  font-size: 30px;
+.header-bar h1 {
+  font-size: 24px;
   font-weight: 700;
-  margin-bottom: 25px;
+  margin: 0;
+  color: #222;
 }
 
+.page-title{
+  margin-left: 10px;
+  font-size: 36px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+/* ==== 제목 ==== */
+h1 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #222;
+  margin-bottom: 22px;
+  letter-spacing: -0.2px;
+}
+
+/* ==== 전체 레이아웃 ==== */
 .record-wrapper {
   display: grid;
-  grid-template-columns: 1.6fr 0.9fr;
-  gap: 30px;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 32px;
+  height: calc(100% - 170px);
+  overflow: hidden;
 }
 
+/* ==== 테이블 박스 ==== */
 .table-box {
   background: #fff;
-  padding: 25px;
-  border-radius: 16px;
-  border: 1px solid #ddd;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+  padding: 20px 24px;
+  border-radius: 12px;
+  border: 1px solid #e2e2e2;
+  overflow-y: auto;
 }
 
+/* ==== 테이블 ==== */
 table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 10px;
+  font-size: 14px;
 }
 
 th {
   padding: 12px;
-  background: #fafafa;
-  border-bottom: 1px solid #e5e5e5;
-  font-size: 14px;
+  background: #f4f4f4;
+  font-weight: 600;
+  border-bottom: 1px solid #ddd;
   color: #444;
 }
 
@@ -266,68 +387,94 @@ td {
   border-bottom: 1px solid #eee;
 }
 
+/* ==== 인풋 공통 ==== */
 td input {
   width: 100%;
-  padding: 8px;
-  background: #fff;
-  border: 1px solid #ccc;
+  padding: 8px 6px;
+  border: 1px solid #cfcfcf;
   border-radius: 6px;
-  color: #222;
-  text-align: center;
   font-size: 14px;
+  color: #222;
+  background: #fff;
+  transition: 0.15s ease;
 }
 
-td input.equipment-input {
-  cursor: pointer;
-  background: #fafafa;
+td input:hover {
+  border-color: #b5b5b5;
 }
 
 td input:focus {
-  border-color: #E60023;
-  box-shadow: 0 0 6px rgba(230, 0, 35, 0.4);
+  border-color: #e60023;
   outline: none;
+  box-shadow: 0 0 0 2px rgba(230, 0, 35, 0.16);
 }
 
-.delete-btn {
-  background: transparent;
-  border: none;
-  color: #E60023;
+/* 기구 선택 칸 */
+.equipment-input {
+  background: #fafafa;
   cursor: pointer;
-  font-size: 18px;
-  font-weight: bold;
 }
 
+/* ==== 삭제 버튼 ==== */
+.delete-btn {
+  background: none;
+  border: none;
+  color: #d32f2f;
+  font-size: 18px;
+  cursor: pointer;
+}
+.delete-btn:hover {
+  color: #b30000;
+}
+
+/* ==== 행 추가 버튼 ==== */
 .add-row-btn {
   margin-top: 14px;
-  padding: 12px 22px;
-  background: #E60023;
-  border: none;
-  color: white;
+  padding: 10px 18px;
+  background: #333;
+  color: #fff;
   border-radius: 8px;
+  border: none;
+  font-size: 14px;
   cursor: pointer;
-  font-weight: bold;
+  font-weight: 600;
+}
+.add-row-btn:hover {
+  background: #111;
+}
+
+/* ==== 이미지 박스 ==== */
+
+.hidden-file-input {
+  display: none;
 }
 
 .img-box {
   background: #fff;
-  padding: 25px;
-  border-radius: 16px;
-  border: 1px solid #ddd;
-  text-align: center;
+  padding: 24px;
+  border-radius: 12px;
+  border: 1px solid #e2e2e2;
 }
 
 .preview {
   width: 100%;
-  height: 330px;
+  height: 600px;
   border-radius: 12px;
-  border: 1px dashed #bbb;
+  border: 2px dashed #bbb;
+  background: #f8f8f8;
   display: flex;
-  align-items: center;
   justify-content: center;
-  color: #888;
+  align-items: center;
   overflow: hidden;
-  margin-bottom: 15px;
-  background: #fafafa;
+  color: #777;
+  font-size: 18px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.preview:hover {
+  border-color: #e60023;
+  color: #e60023;
 }
 
 .preview img {
@@ -336,11 +483,29 @@ td input:focus {
   object-fit: cover;
 }
 
+/* ==== 저장 버튼 ==== */
+.save-btn {
+  margin-top: 22px;
+  padding: 12px 26px;
+  background: #e60023;
+  color: #fff;
+  border-radius: 10px;
+  border: none;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.save-btn:hover {
+  background: #ff2e4f;
+}
+
+/* ==== 모달 ==== */
 .modal-bg {
   position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: rgba(0,0,0,0.35);
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -348,45 +513,58 @@ td input:focus {
 
 .modal {
   background: #fff;
-  padding: 24px;
+  padding: 20px 22px;
   width: 360px;
   border-radius: 12px;
-  animation: fadeIn 0.25s ease;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(15px); }
-  to { opacity: 1; transform: translateY(0); }
+  animation: fadeIn 0.22s ease-out;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 
 .modal-title {
-  font-size: 20px;
-  font-weight: 600;
-  margin-bottom: 16px;
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 14px;
 }
 
-.search-input {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 14px;
-  margin-bottom: 16px;
-}
 
 .equipment-item {
-  padding: 12px;
+  padding: 10px 12px;
   background: #f7f7f7;
   border-radius: 8px;
+  border: 1px solid #ddd;
   margin-bottom: 10px;
   cursor: pointer;
-  border: 1px solid #ddd;
 }
 
 .equipment-item:hover {
-  background: #E60023;
+  background: #e60023;
+  border-color: #e60023;
   color: #fff;
-  border-color: #E60023;
 }
+
+.back-btn {
+  float: right;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  color: #666;
+  cursor: pointer;
+  padding: 2px 6px;
+}
+
+.back-btn:hover {
+  color: #e60023;
+  text-decoration: underline;
+}
+
+.drag-handle {
+  cursor: grab;
+  color: #666;
+  user-select: none;
+}
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+
 </style>

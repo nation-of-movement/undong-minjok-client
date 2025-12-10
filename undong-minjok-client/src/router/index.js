@@ -23,7 +23,6 @@ const routes = [
       { path: "password/reset", component: () => import("@/pages/user/ResetPasswordView.vue") },
 
       { path: "profile", component: () => import("@/pages/user/ProfileView.vue"), meta: { requiresAuth: true } },
-      { path: "profile/edit", component: () => import("@/pages/user/ProfileEditView.vue"), meta: { requiresAuth: true } },
     ]
   },
   {

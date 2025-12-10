@@ -2,20 +2,22 @@
   <RecordHeaderBar/>
 
   <div class="page">
-    <h2 class="title floating-title">오늘도 오운완 챌린지 성공해볼까요? 📸💪</h2>
+    <h2 class="title floating-title">오늘도 오운완 챌린지 성공해볼까요?</h2>
+
     <div class="container">
-      <!-- 캘린더 박스 -->
+
+      <!-- 달력 영역 -->
       <div class="calendar-box card">
         <div class="month-title">{{ year }}년 {{ month }}월</div>
 
-        <!-- 요일 -->
+        <!-- 요일 표시 -->
         <div class="weekday-row">
           <div class="weekday" v-for="w in weekdays" :key="w">
             {{ w }}
           </div>
         </div>
 
-        <!-- 날짜 -->
+        <!-- 날짜 표시 -->
         <div class="calendar-grid">
           <div
             class="day"
@@ -25,81 +27,117 @@
             @click="selectDay(day)"
             @dblclick="goRecordPage(day)"
           >
-            <!-- 날짜 숫자 -->
             <div class="day-date">{{ day }}</div>
 
-            <!-- 오운완 사진 -->
+            <!-- 날짜별 저장된 운동 사진 -->
             <img v-if="photos[day]" :src="photos[day]" class="day-photo" />
           </div>
         </div>
       </div>
 
-      <!-- 템플릿 목록 -->
+      <!-- 템플릿 저장소 -->
       <div class="template-box card">
-        <h3 class="section-title">📦 템플릿 보관함</h3>
-        <p class="subtitle">⬆ 날짜 한 번 클릭 후 적용할 템플릿을 골라주세요.</p>
+        <h3 class="section-title">템플릿 보관함</h3>
+        <p class="subtitle">날짜를 선택한 후 템플릿을 적용할 수 있습니다.</p>
 
         <div
           v-for="tpl in templateList"
           :key="tpl.templateId"
           class="template-card"
-          @click="applyTemplate(tpl.templateId)"
         >
+          <!-- 템플릿 대표 이미지 -->
+          <img
+            v-if="tpl.imgPath"
+            :src="`http://localhost:8888/uploads/${tpl.imgPath}`"
+            class="template-thumbnail"
+          />
+
+          <!-- 템플릿명 -->
           <div class="template-title">{{ tpl.templateName }}</div>
-          <div class="template-meta">작성자: {{ tpl.creatorNickname ?? '익명' }}</div>
+
+          <!-- 작성자 정보 -->
+          <div class="template-meta">
+            작성자: {{ tpl.creatorNickname ?? '익명' }}
+          </div>
+
+          <!-- 템플릿 적용 -->
+          <button class="apply-btn" @click="applyTemplate(tpl.templateId)">
+            적용하기
+          </button>
+
+          <!-- 템플릿 삭제 -->
+          <button class="delete-btn" @click="deleteTemplate(tpl.templateId)">
+            삭제하기
+          </button>
         </div>
+
       </div>
     </div>
   </div>
 </template>
+
+
 <script>
 import RecordHeaderBar from '@/pages/DailyWorkoutRecord/RecordHeaderBar.vue'
 import dailyWorkoutRecordApi from '@/api/dailyWorkoutRecordApi.js'
+import templateStorageApi from '@/api/templateStorageApi.js'
 
 export default {
-  name: 'CalendarPage',
+  name: "CalendarPage",
   components: { RecordHeaderBar },
+
+  props: {
+    year: String,
+    month: String
+  },
 
   data() {
     return {
-      year: null,
-      month: null,
-      days: [],
       selectedDay: null,
-
+      days: [],
       weekdays: ['월', '화', '수', '목', '금', '토', '일'],
       templateList: [],
-
-      photos: {},
-    }
+      photos: {}
+    };
   },
 
   created() {
-    this.year = Number(this.$route.params.year)
-    this.month = Number(this.$route.params.month)
-    this.generateDays()
+    this.generateDays();
   },
 
   mounted() {
-    this.loadTemplates()
-    this.loadPhotos()
+    this.loadTemplates();
+    this.loadPhotos();
   },
 
   methods: {
+
+    //현재 월의 날짜 리스트 생성
     generateDays() {
       const lastDay = new Date(this.year, this.month, 0).getDate()
       this.days = Array.from({ length: lastDay }, (_, i) => i + 1)
     },
 
+    //해당월 운동 사진 목록 조회
+    async loadPhotos() {
+      const res = await dailyWorkoutRecordApi.getMonthlyPhotos(this.year, this.month)
+      const list = res.data.data ?? res.data
+
+      this.photos = {}
+
+      list.forEach(item => {
+        this.photos[item.day] = `http://localhost:8888/uploads/${item.workoutImg}`
+      })
+    },
+
+    //날짜 클릭했을 때 선택 상태 업데이트
     selectDay(day) {
       this.selectedDay = day
     },
 
+    // 날짜 더블 클릭
     goRecordPage(day) {
-      const date = `${this.year}-${String(this.month).padStart(2, '0')}-${String(day).padStart(
-        2,
-        '0',
-      )}`
+      const date = `${this.year}-${String(this.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
 
       this.$router.push({
         name: 'Record',
@@ -107,45 +145,42 @@ export default {
       })
     },
 
+    //템플릿 보관함 목록 조회
     async loadTemplates() {
-      const res = await fetch('/api/v1/templates/storage')
-      this.templateList = await res.json()
+      const res = await templateStorageApi.getStorageList()
+      this.templateList = res.data.data ?? res.data
     },
 
+    //템플릿 적용
     async applyTemplate(templateId) {
       if (!this.selectedDay) {
-        alert('먼저 날짜를 선택해주세요!')
+        alert("먼저 날짜를 선택해주세요.")
         return
       }
 
-      const date = `${this.year}-${String(this.month).padStart(2, '0')}-${String(
-        this.selectedDay,
-      ).padStart(2, '0')}`
+      const date = `${this.year}-${String(this.month).padStart(2, '0')}-${String(this.selectedDay).padStart(2, '0')}`
 
-      await fetch(`/api/v1/templates/storage/${templateId}/apply?date=${date}`, {
-        method: 'POST',
-      })
+      await templateStorageApi.applyTemplate(templateId, date)
 
-      alert(`템플릿이 ${date}에 적용되었어요!`)
+      alert(`템플릿이 ${date}에 적용되었습니다.`)
     },
 
-    async loadPhotos() {
-      const res = await dailyWorkoutRecordApi.getMonthlyPhotos(this.year, this.month)
+    //템플릿 삭제
+    async deleteTemplate(templateId) {
+      const confirmDelete = confirm("정말 삭제하시겠습니까?")
+      if (!confirmDelete) return
 
-      // 결과 예:
-      // [ { day: 5, workoutImg: "workout/a.jpg" }, ... ]
+      await templateStorageApi.deleteFromStorage(templateId)
 
-      this.photos = {}
+      // 화면에서 즉시 제거
+      this.templateList = this.templateList.filter(t => t.templateId !== templateId)
 
-      const list = res.data.data ?? res.data   // ApiResponse 대응
-
-      list.forEach(item => {
-        this.photos[item.day] = `http://localhost:8888/uploads/${item.workoutImg}`
-      })
-    }
-  },
+      alert("삭제되었습니다.")
+    },
+  }
 }
 </script>
+
 <style scoped>
 .page {
   display: flex;
@@ -288,6 +323,15 @@ export default {
   margin-bottom: 10px;
 }
 
+.template-thumbnail {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  background: #f3f3f3;
+}
+
 .template-card {
   padding: 12px;
   margin-bottom: 12px;
@@ -300,7 +344,7 @@ export default {
 .template-card:hover {
   background: #ffe2e6;
   border-color: #e60023;
-  transform: translateY(-2px);
+  transform: translateY(-1px);
 }
 
 .template-title {
@@ -312,6 +356,41 @@ export default {
   font-size: 11px;
   opacity: 0.7;
 }
+
+.apply-btn {
+  margin-top: 8px;
+  width: 100%;
+  padding: 8px;
+  border: none;
+  border-radius: 8px;
+  background: #e60023;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.apply-btn:hover {
+  background: #ff3355;
+}
+
+.delete-btn {
+  margin-top: 6px;
+  width: 100%;
+  padding: 8px;
+  border: none;
+  border-radius: 8px;
+  background: #444;
+  color: white;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.delete-btn:hover {
+  background: #222;
+}
+
+
 
 @keyframes fadeInDrop {
   0% {
