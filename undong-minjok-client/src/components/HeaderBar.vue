@@ -1,0 +1,80 @@
+<script setup>
+import { useAuthStore } from "@/stores/authStore";
+const auth = useAuthStore();
+</script>
+
+<template>
+  <header class="header">
+    <div class="logo">운동의 민족</div>
+
+    <nav class="nav">
+      <RouterLink to="/">홈</RouterLink>
+      <RouterLink to="/community">커뮤니티</RouterLink>
+      <RouterLink to="/challenge">챌린지</RouterLink>
+      <template v-if="auth.user">
+        <RouterLink to="/profile">내 정보</RouterLink>
+        <button @click="auth.logout" class="btn-red">로그아웃</button>
+      </template>
+
+      <template v-else>
+        <RouterLink to="/login" class="btn-red">로그인</RouterLink>
+      </template>
+    </nav>
+  </header>
+</template>
+
+<style scoped>
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+
+  width: 100%;
+  padding: 20px 5%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  background: #000; /* fixed일 때 배경색 필수 */
+  z-index: 999; /* 위로 올리기 */
+  box-sizing: border-box;
+}
+
+
+.logo {
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.nav a {
+  text-decoration: none;
+  color: #fff;
+  font-weight: 400;
+}
+
+.btn-red {
+  padding: 8px 16px;
+  background: #E60023;
+  border-radius: 6px;
+  font-weight: 600;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: 0.2s;
+  display: inline-block;
+}
+
+.btn-red:hover {
+  background: #ff0033;
+  transform: translateY(-1px);
+}
+
+</style>
