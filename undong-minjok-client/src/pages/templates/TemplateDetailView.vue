@@ -126,6 +126,8 @@ export default {
 
   data() {
     return {
+      BASE_URL: import.meta.env.VITE_IMG_BASE_URL,
+
       showBuyModal: false,
       liked: false,
       likeCount: 0,
@@ -168,7 +170,7 @@ export default {
         this.template.id = d.id;
         this.template.title = d.name;
         this.template.description = d.content;
-        this.template.thumbnail = d.thumbnailImage;
+        this.template.thumbnail = this.BASE_URL + d.thumbnailImage;
         this.template.creator = d.writerNickname;
         this.template.sellerProfileImg = d.writerProfileImage || "";
 
