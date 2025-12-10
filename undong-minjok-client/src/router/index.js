@@ -8,6 +8,7 @@ import PointPaymentsFailView from "@/pages/point/PointPaymentsFailView.vue";
 import CalendarView from '@/pages/calender/CalendarView.vue'
 import MonthSelectView from '@/pages/calender/MonthSelectView.vue'
 import RecordView from '@/pages/record/RecordView.vue'
+import PointHistoryView from '@/pages/point/PointHistoryView.vue'
 
 
 const routes = [
@@ -21,12 +22,8 @@ const routes = [
       { path: "id/search", component: () => import("@/pages/user/IdSearchView.vue") },
       { path: "password/search", component: () => import("@/pages/user/PasswordSearchView.vue") },
       { path: "password/reset", component: () => import("@/pages/user/ResetPasswordView.vue") },
-
-      {
-        path: "profile",
-        component: () => import("@/pages/user/ProfileView.vue"),
-        meta: { requiresAuth: true }
-      },
+      { path: "profile", component: () => import("@/pages/user/ProfileView.vue"), meta: { requiresAuth: true } },
+      { path: "/point-history", name: "PointHistory", component: PointHistoryView , meta: { requiresAuth: true }}
     ]
   },
   {
@@ -58,8 +55,7 @@ const routes = [
     path: "/fail",
     name: "Fail",
     component: PointPaymentsFailView
-  }
-
+  },
   // -------------------- 템플릿 상세 페이지 --------------------
   {
     path: "/templates/:id",

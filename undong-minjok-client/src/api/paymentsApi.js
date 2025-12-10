@@ -10,3 +10,4 @@ export async function paymentsPrepareApi(payload) {
 export async function paymentsConfirmApi(payload) {
   return api.post('/payments/confirm', payload);
 }
+

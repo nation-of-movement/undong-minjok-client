@@ -2,6 +2,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/authStore'
+
 import {
   getMyInfoApi,
   updateNicknameApi,
@@ -10,6 +11,7 @@ import {
   deleteUserApi,
   resetPasswordApi
 } from '@/api/userApi'
+import PointHistoryView from '@/pages/point/PointHistoryView.vue'
 
 const auth = useAuthStore()
 const IMAGE_BASE_URL = import.meta.env.VITE_IMG_BASE_URL
@@ -370,7 +372,7 @@ const submitResetPassword = async () => {
         <!-- 다른 탭 -->
         <div v-else-if="activeMenu === 'points'" class="card">
           <h3 class="card-title">포인트 이력</h3>
-          <p class="empty-text">준비중입니다.</p>
+          <PointHistoryView />
         </div>
 
         <div v-else-if="activeMenu === 'purchases'" class="card">

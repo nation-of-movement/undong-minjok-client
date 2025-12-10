@@ -1,0 +1,43 @@
+.recharge {
+  background-color: dodgerblue;
+  height: 20px;
+  padding: 5px;
+  border-radius: 17px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.purchase {
+  background-color: #11c46b;
+  height: 20px;
+  padding: 5px;
+  border-radius: 17px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.earn {
+  background-color: mediumpurple;
+  height: 20px;
+  padding: 5px;
+  border-radius: 17px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.withdraw-wait{
+  background-color: brown;
+  height: 20px;
+  padding: 5px;
+  border-radius: 17px;
+  font-size: 12px;
+  font-weight: bold;
+}
+.withdraw{
+  background-color: deeppink;
+  height: 20px;
+  padding: 5px;
+  border-radius: 17px;
+  font-size: 12px;
+  font-weight: bold;
+}

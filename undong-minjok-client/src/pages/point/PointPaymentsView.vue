@@ -40,6 +40,7 @@
       ></div>
     </div>
   </div>
+
 </template>
 
 <script setup>
@@ -250,4 +251,6 @@ input[type='number'] {
   justify-content: center; /* 가로 중앙 */
   width: 100%;
 }
+
+
 </style>
