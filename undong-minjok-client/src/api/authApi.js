@@ -70,3 +70,9 @@ export function resetPasswordApi(resetToken, newPassword) {
     newPassword
   });
 }
+
+export const findIdApi = async (token) => {
+  return await api.get(`/users/id`, {
+    params: { token }
+  }).then(res => res.data);
+};

@@ -22,8 +22,15 @@
         </button>
 
         <div class="extra-links">
-          <RouterLink to="/signup">회원가입</RouterLink>
-          <RouterLink to="/password/search">비밀번호 찾기</RouterLink>
+          <div class="left-links">
+            <RouterLink to="/signup">회원가입</RouterLink>
+          </div>
+
+          <div class="right-links">
+            <RouterLink to="/id/search">아이디 찾기</RouterLink>
+            <RouterLink to="/password/search">비밀번호 찾기</RouterLink>
+          </div>
+
         </div>
 
       </form>
@@ -132,6 +139,7 @@ const onSubmit = async () => {
   background: rgba(255,255,255,0.05);
   color: #fff;
   transition: 0.2s;
+  box-sizing: border-box;
 }
 
 .input-group input:focus {
@@ -163,10 +171,33 @@ const onSubmit = async () => {
 .extra-links {
   margin-top: 18px;
   display: flex;
-  justify-content: space-between;
+  justify-content: space-between; /* 양쪽 끝 정렬 */
+  align-items: center;
   font-size: 14px;
   opacity: 0.7;
 }
+
+/* 왼쪽 영역 */
+.left-links a {
+  color: #fff;
+  text-decoration: none;
+}
+
+/* 오른쪽 영역 */
+.right-links {
+  display: flex;
+  gap: 14px; /* 아이디/비번 찾기 간격 */
+}
+
+.right-links a {
+  color: #fff;
+  text-decoration: none;
+}
+
+.extra-links a:hover {
+  color: #E60023;
+}
+
 
 .extra-links a {
   color: #fff;
