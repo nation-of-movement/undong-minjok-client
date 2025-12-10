@@ -119,10 +119,14 @@ export default {
   name: "RecordPage",
   components: { RecordHeaderBar },
 
+  props: {
+    date: String
+  },
+
   data() {
     return {
-      // URL에서 전달받은 날짜
-      date: this.$route.query.date,
+      /*// URL에서 전달받은 날짜
+      date: this.$route.query.date,*/
 
       // 기록 ID (처음 생성 시 백엔드에서 반환)
       recordId: null,

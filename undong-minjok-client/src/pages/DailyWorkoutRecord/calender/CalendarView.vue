@@ -83,48 +83,31 @@ import dailyWorkoutRecordApi from '@/api/dailyWorkoutRecordApi.js'
 import templateStorageApi from '@/api/templateStorageApi.js'
 
 export default {
-  name: 'CalendarPage',
+  name: "CalendarPage",
   components: { RecordHeaderBar },
+
+  props: {
+    year: String,
+    month: String
+  },
 
   data() {
     return {
-      // 현재 보고 있는 연도와 월
-      year: null,
-      month: null,
-
-      // 달력 날짜 리스트
-      days: [],
-
-      // 선택된 날짜(한 번 클릭 시)
       selectedDay: null,
-
-      // 요일 목록
+      days: [],
       weekdays: ['월', '화', '수', '목', '금', '토', '일'],
-
-      // 저장된 템플릿 목록
       templateList: [],
-
-      // 날짜별 운동 사진 저장 객체
-      // 예: { 5: "경로", 10: "경로" }
-      photos: {},
-    }
+      photos: {}
+    };
   },
 
   created() {
-    // URL에서 연도와 월을 받아 초기화
-    this.year = Number(this.$route.params.year)
-    this.month = Number(this.$route.params.month)
-
-    // 해당 연월의 날짜 생성
-    this.generateDays()
+    this.generateDays();
   },
 
   mounted() {
-    // 템플릿 목록 로딩
-    this.loadTemplates()
-
-    // 해당 월의 운동 사진 로딩
-    this.loadPhotos()
+    this.loadTemplates();
+    this.loadPhotos();
   },
 
   methods: {
