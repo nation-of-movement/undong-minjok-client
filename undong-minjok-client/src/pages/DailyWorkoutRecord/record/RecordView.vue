@@ -15,8 +15,8 @@
             <th>부위</th>
             <th>기구</th>
             <th>횟수</th>
-            <th>중량</th>
-            <th>시간</th>
+            <th>중량(kg)</th>
+            <th>시간(분)</th>
             <th></th>
           </tr>
           </thead>
@@ -390,7 +390,7 @@ td {
 /* ==== 인풋 공통 ==== */
 td input {
   width: 100%;
-  padding: 8px 10px;
+  padding: 8px 6px;
   border: 1px solid #cfcfcf;
   border-radius: 6px;
   font-size: 14px;
