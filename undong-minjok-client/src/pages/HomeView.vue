@@ -33,7 +33,10 @@
         <p>인기 있는 운동 루틴 템플릿을 한 곳에서 보고, 내 기록장에 바로 적용해보세요.</p>
       </div>
 
-      <button class="cta-sell-btn">템플릿 판매 시작하기 ➜</button>
+      <!-- ⭐ 기존 버튼 수정: 모달 열림 연결 -->
+      <button class="cta-sell-btn" @click="openCreateModal">
+        템플릿 등록하기 ➜
+      </button>
     </div>
 
     <!-- TABS -->
@@ -63,6 +66,8 @@
         @click="goTemplateDetail(item.id)"
       >
         <div class="thumb">
+          <img :src="item.thumbnailImage" class="thumb-img" />
+
           <span class="thumb-tag">{{ item.tag }}</span>
           <span class="thumb-label">{{ item.label }}</span>
 
@@ -73,12 +78,10 @@
         <div class="card-body">
           <div class="template-title">{{ item.title }}</div>
 
-          <!-- 판매량으로 변경 -->
           <div class="template-creator">
-            by {{ item.creator }} | 판매량 {{ item.level }}
+            by {{ item.creator }} | 판매량 {{ item.salesCount }}
           </div>
 
-          <!-- 등록 날짜 (하트 위쪽) -->
           <div class="template-date">
             등록일: {{ item.date }}
           </div>
@@ -88,7 +91,6 @@
               <span class="tag" v-for="t in item.tags" :key="t">{{ t }}</span>
             </div>
 
-            <!-- 다운로드 제거 → 하트만 표시 -->
             <div class="stats">
               <div class="stat-item">❤️ {{ item.like }}</div>
             </div>
@@ -98,10 +100,6 @@
             <span :class="{ free: item.price === 0 }" class="price-text">
               {{ item.price === 0 ? '무료' : '₩' + item.price }}
             </span>
-
-            <button class="buy-btn">
-              {{ item.price === 0 ? '내 기록장에 추가' : '구매하기' }}
-            </button>
           </div>
         </div>
       </article>
@@ -119,32 +117,51 @@
       </button>
     </div>
 
+    <!-- ⭐⭐ 여기 추가됨: 템플릿 생성 모달 출력 -->
+    <CreateTemplateModal
+      v-if="showCreateModal"
+      @close="showCreateModal = false"
+      @created="onTemplateCreated"
+    />
+
   </div>
 </template>
 
 <script>
 import { useAuthStore } from "@/stores/authStore"
 
+// ⭐ 추가됨
+import TemplateList from "@/pages/templates/TemplateList.vue";
+import CreateTemplateModal from "@/pages/templates/CreateTemplateModal.vue";
+import { templateApi } from "@/api/axios";
+
 export default {
   name: "HomeView",
+
+  // ⭐ 추가됨
+  components: { TemplateList, CreateTemplateModal },
 
   data() {
     return {
       page: 1,
       pageSize: 6,
 
+      // ❗ 기존 더미 데이터 = 유지
       templates: Array.from({ length: 30 }).map((_, i) => ({
         id: i + 1,
-        date: `2025-01-${String((i % 28) + 1).padStart(2, "0")}`, // 등록날짜 추가
+        date: `2025-01-${String((i % 28) + 1).padStart(2, "0")}`,
         tag: "전신 • 루틴",
         label: "Routine " + (i + 1),
         title: `템플릿 제목 ${i + 1}`,
         creator: "Creator" + (i + 1),
-        level: "⭐⭐⭐", // 별은 유지
+        salesCount: 50 + i,
         price: (i % 3 === 0 ? 0 : 4900),
         tags: ["헬스장", "운동"],
         like: 100 + i
-      }))
+      })),
+
+      // ⭐ 추가됨: 생성 모달
+      showCreateModal: false,
     }
   },
 
@@ -167,17 +184,46 @@ export default {
     goLogin() {
       this.$router.push("/login")
     },
+
     goToRecord() {
       this.$router.push("/month")
     },
+
     goTemplateDetail(id) {
-      this.$router.push(`/template/${id}`)
+      this.$router.push(`/templates/${id}`)
     },
+
     goPage(p) {
       this.page = p
-    }
+    },
+
+    // ⭐ 추가됨: 템플릿 등록 모달 열기
+    openCreateModal() {
+      this.showCreateModal = true;
+    },
+
+    // ⭐ 추가됨: 실제 템플릿 목록 불러오기 (API)
+    async loadTemplates() {
+      try {
+        const res = await templateApi.getAll();   // GET /api/v1/templates/all
+        this.templates = res.data.data;           // ❗ 기존 templates 필드에 교체
+      } catch (err) {
+        console.error("템플릿 목록 불러오기 실패", err);
+      }
+    },
+
+    // ⭐ 추가됨: 템플릿 생성 성공 후 리스트 새로고침
+    async onTemplateCreated() {
+      this.showCreateModal = false;
+      await this.loadTemplates();
+    },
+  },
+
+  // ⭐ 추가됨: 페이지 로드시 템플릿 목록 API 불러오기
+  async mounted() {
+    await this.loadTemplates();
   }
-}
+};
 </script>
 
 <style scoped>
@@ -319,7 +365,16 @@ export default {
   background: #1a1a1a;
   border-radius: 12px;
   position: relative;
+  overflow: hidden;
 }
+
+.thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;   /* 이미지가 꽉 차게 */
+  display: block;
+}
+
 .thumb-tag {
   position: absolute;
   top: 8px;
