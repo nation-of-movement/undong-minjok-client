@@ -50,18 +50,23 @@ const withdraw = async () => {
 
   console.log('payload' ,payload)
   try {
-
     const response = await withdrawApi(payload);
     if(response.data.success){
       alert("출금되었습니다.");
       closeModal();
-      await loadPointHistory();
     }
-
   } catch (e) {
     console.error(e);
     closeModal();
     alert("포인트 출금 실패했습니다.");
+  } finally {
+    const result = await loadPointHistory();
+    if (result) {
+      pointHistory.value = result.points
+      pointStatus.value = result.pointStatuses
+      _totalPoint.value = result.totalPoint == null ? 0 : result.totalPoint
+      _sellingPoint.value = result.sellingPoint == null ? 0 : result.sellingPoint
+    }
   }
 
 
@@ -130,9 +135,7 @@ watch(
   () => withdrawInfo.amount,
   (newVal) => {
     let num = 0.5;
-
     feeCharge.value = newVal * (num / 100);
-
 
     if (newVal > totalPoint.value) {
       withdrawInfo.amount = totalPoint.value;
@@ -185,7 +188,7 @@ watch(() => withdrawInfo.bank, (v) => {
 
       <div class="info-block">
         <div class="info-block-title">{{ POINT_STATS_TAG[item.pointStatus]?.contents }}</div>
-        <div>{{ item.templateName }}</div>
+        <div v-if="item.templateNme">{{ item.templateName }}</div>
         <span class="info-block-date">{{ item.createdDt.split('T')[0] }}</span>
       </div>
       <div class="point-block">
