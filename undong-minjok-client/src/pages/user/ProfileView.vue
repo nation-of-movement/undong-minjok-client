@@ -8,6 +8,7 @@ import {
   updateBioApi,
   uploadProfileImageApi,
   deleteUserApi,
+  resetPasswordApi
 } from '@/api/userApi'
 
 const auth = useAuthStore()
@@ -191,6 +192,72 @@ const confirmDeleteUser = async () => {
   }
 }
 
+/* ================================
+ * 비밀번호 변경 모달 로직
+ * ================================ */
+import { usePasswordSearchStore } from "@/stores/passwordSearchStore";
+const passwordResetStore = usePasswordSearchStore();
+
+const showPasswordModal = ref(false);
+const newPassword = ref("");
+const newPasswordCheck = ref("");
+
+const openPasswordModal = () => {
+  passwordResetStore.startFlow("PASSWORD_RESET");
+  newPassword.value = "";
+  newPasswordCheck.value = "";
+  showPasswordModal.value = true;
+};
+
+const sendResetEmail = async () => {
+  if (passwordResetStore.sending) return;
+
+  const ok = await passwordResetStore.sendCode(userInfo.value.email);
+  if (ok) {
+    alert("인증번호가 이메일로 발송되었습니다.");
+    passwordResetStore.codeSent = true; // 인증번호 입력 UI 활성화
+  }
+};
+
+const verifyResetCode = async () => {
+  const ok = await passwordResetStore.verifyCode(
+    userInfo.value.email,
+    passwordResetStore.code
+  );
+
+  if (ok) alert("인증되었습니다!");
+};
+
+const submitResetPassword = async () => {
+
+  if (!passwordResetStore.emailVerified) {
+    return alert("이메일 인증이 필요합니다.");
+  }
+
+  if (!newPassword.value || newPassword.value.length < 6) {
+    return alert("비밀번호는 6자리 이상이어야 합니다.");
+  }
+
+  if (newPassword.value !== newPasswordCheck.value) {
+    return alert("비밀번호가 서로 일치하지 않습니다.");
+  }
+
+  try {
+    await resetPasswordApi({
+      resetToken: passwordResetStore.resetToken,
+      newPassword: newPassword.value,
+    });
+
+    alert("비밀번호가 성공적으로 변경되었습니다. 다시 로그인해주세요.");
+    auth.logout();
+    window.location.replace("/")
+    window.location.reload();
+  } catch (e) {
+    alert("비밀번호 변경에 실패했습니다.");
+  }
+};
+
+
 </script>
 
 <template>
@@ -248,7 +315,6 @@ const confirmDeleteUser = async () => {
                 <label>이메일</label>
                 <div class="readonly-box">{{ userInfo.email }}</div>
               </div>
-
               <div class="field-row">
                 <input v-model="nickname" class="input" />
 
@@ -266,6 +332,10 @@ const confirmDeleteUser = async () => {
               <div class="field">
                 <label>잔여 포인트</label>
                 <div class="readonly-box">{{ userInfo.amount }} P</div>
+              </div>
+              <div class="field">
+                <label>비밀번호</label>
+                <button class="btn-outline" @click="openPasswordModal">비밀번호 변경</button>
               </div>
             </div>
           </div>
@@ -328,6 +398,84 @@ const confirmDeleteUser = async () => {
       </div>
     </div>
   </div>
+
+  <!-- ================= 비밀번호 변경 모달 ================= -->
+  <div class="modal-backdrop" v-if="showPasswordModal">
+    <div class="modal">
+
+      <h3>비밀번호 변경</h3>
+
+      <!-- 이메일 -->
+      <div class="field-row" style="margin-bottom: 12px;">
+        <div class="readonly-box" style="flex:1; text-align:left;">
+          {{ userInfo.email }}
+        </div>
+        <button
+          class="btn-outline"
+          :disabled="passwordResetStore.sending || passwordResetStore.emailVerified"
+          @click="sendResetEmail"
+        >
+          <!-- 버튼 표시 텍스트 -->
+          <span v-if="passwordResetStore.sending">요청 중...</span>
+          <span v-else-if="passwordResetStore.codeSent && !passwordResetStore.emailVerified">재요청</span>
+          <span v-else>인증 요청</span>
+        </button>
+
+      </div>
+
+      <!-- 인증번호 입력 + 확인 -->
+      <div class="field-row" style="margin-bottom: 8px;">
+        <input
+          v-model="passwordResetStore.code"
+          placeholder="인증번호 입력"
+          class="input"
+          :disabled="passwordResetStore.emailVerified"
+        />
+        <button
+          class="btn-red"
+          :disabled="passwordResetStore.emailVerified"
+          @click="verifyResetCode"
+        >
+          확인
+        </button>
+      </div>
+
+      <!-- 인증 결과 표시 -->
+      <p v-if="passwordResetStore.emailVerified" class="success">✔ 인증 완료</p>
+      <p v-if="passwordResetStore.verifyFail" class="error">❌ 인증 실패</p>
+
+      <!-- 타이머 -->
+      <p v-if="!passwordResetStore.emailVerified && passwordResetStore.timer > 0" class="timer">
+        ⏳ {{ passwordResetStore.timer }}초 남음
+      </p>
+
+      <!-- 새 비밀번호 -->
+      <input
+        type="password"
+        class="input"
+        placeholder="새 비밀번호"
+        v-model="newPassword"
+        style="margin-top: 12px;"
+      />
+
+      <!-- 새 비밀번호 확인 -->
+      <input
+        type="password"
+        class="input"
+        placeholder="새 비밀번호 확인"
+        v-model="newPasswordCheck"
+        style="margin-top: 8px;"
+      />
+
+      <!-- 버튼 -->
+      <div class="modal-actions">
+        <button class="btn-outline" @click="showPasswordModal = false">취소</button>
+        <button class="btn-red" @click="submitResetPassword">변경</button>
+      </div>
+
+    </div>
+  </div>
+
 </template>
 <style scoped>
 .field-footer-between {
