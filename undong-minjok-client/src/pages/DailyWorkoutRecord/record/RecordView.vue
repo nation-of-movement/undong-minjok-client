@@ -10,6 +10,7 @@
         <table>
           <thead>
           <tr>
+            <th style="width: 40px;">↕</th>
             <th>운동명</th>
             <th>부위</th>
             <th>횟수</th>
@@ -20,29 +21,42 @@
           </tr>
           </thead>
 
-          <tbody>
-          <tr v-for="(row, idx) in rows" :key="idx">
-            <td><input v-model="row.exerciseName" /></td>
-            <td><input v-model="row.part" /></td>
-            <td><input type="number" v-model.number="row.reps" /></td>
-            <td><input type="number" v-model.number="row.weight" /></td>
-            <td><input type="number" v-model.number="row.duration" /></td>
+          <draggable
+            v-model="rows"
+            item-key="id"
+            tag="tbody"
+            handle=".drag-handle"
+          >
+            <template #item="{ element: row, index: idx }">
+              <tr :key="row.id">
 
-            <td>
-              <input
-                class="equipment-input"
-                readonly
-                placeholder="기구 선택"
-                v-model="row.equipmentName"
-                @click="openModal(idx)"
-              />
-            </td>
+                <!-- 드래그 핸들 버튼 추가 -->
+                <td class="drag-handle" style="cursor: grab; text-align:center; font-size:18px;">
+                  ≡
+                </td>
 
-            <td>
-              <button class="delete-btn" @click="deleteRow(idx)">×</button>
-            </td>
-          </tr>
-          </tbody>
+                <td><input v-model="row.exerciseName" /></td>
+                <td><input v-model="row.part" /></td>
+                <td><input type="number" v-model.number="row.reps" /></td>
+                <td><input type="number" v-model.number="row.weight" /></td>
+                <td><input type="number" v-model.number="row.duration" /></td>
+
+                <td>
+                  <input
+                    class="equipment-input"
+                    readonly
+                    placeholder="기구 선택"
+                    v-model="row.equipmentName"
+                    @click="openModal(idx)"
+                  />
+                </td>
+
+                <td>
+                  <button class="delete-btn" @click="deleteRow(idx)">×</button>
+                </td>
+              </tr>
+            </template>
+          </draggable>
         </table>
 
         <button class="add-row-btn" @click="addRow">+ 행 추가</button>
@@ -114,10 +128,12 @@ import DailyWorkoutRecordApi from "@/api/dailyWorkoutRecordApi.js";
 import RecordHeaderBar from "@/pages/DailyWorkoutRecord/RecordHeaderBar.vue";
 import EquipmentApi from "@/api/equipmentApi.js";
 import PartApi from "@/api/partApi.js";
+import draggable from "vuedraggable";
+
 
 export default {
   name: "RecordPage",
-  components: { RecordHeaderBar },
+  components: { RecordHeaderBar, draggable },
 
   props: {
     date: String
@@ -186,6 +202,7 @@ export default {
 
       // 기존 운동 리스트 매핑
       this.rows = data.exercises.map((e) => ({
+        id: e.id ?? Date.now() + Math.random(),
         exerciseName: e.exerciseName,
         part: e.exercisePart,
         reps: e.reps,
@@ -204,6 +221,7 @@ export default {
     //새로운 행 추가
     addRow() {
       this.rows.push({
+        id: Date.now() + Math.random(),
         exerciseName: "",
         part: "",
         reps: null,
@@ -537,5 +555,15 @@ td input:focus {
   color: #e60023;
   text-decoration: underline;
 }
+
+.drag-handle {
+  cursor: grab;
+  color: #666;
+  user-select: none;
+}
+.drag-handle:active {
+  cursor: grabbing;
+}
+
 
 </style>
