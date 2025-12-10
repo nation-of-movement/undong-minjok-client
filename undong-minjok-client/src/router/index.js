@@ -1,16 +1,14 @@
 import { createRouter, createWebHistory } from "vue-router";
 import DefaultLayout from "@/layouts/DefaultLayout.vue";
 import HomeView from "@/pages/HomeView.vue";
-import CalendarView from '@/pages/DailyWorkoutRecord/calender/CalendarView.vue'
-import MonthSelectView from '@/pages/DailyWorkoutRecord/calender/MonthSelectView.vue'
-import RecordView from '@/pages/DailyWorkoutRecord/record/RecordView.vue'
 import { useAuthStore } from '@/stores/authStore';
-import CalendarView from '@/pages/calender/CalendarView.vue'
-import MonthSelectView from '@/pages/calender/MonthSelectView.vue'
-import RecordView from '@/pages/record/RecordView.vue'
 import PointPaymentsView from '@/pages/point/PointPaymentsView.vue'
 import PointPaymentsSucceeView from "@/pages/point/PointPaymentsSucceeView.vue";
 import PointPaymentsFailView from "@/pages/point/PointPaymentsFailView.vue";
+import MonthSelectView
+  from '@/pages/DailyWorkoutRecord/calender/MonthSelectView.vue'
+import CalendarView from '@/pages/DailyWorkoutRecord/calender/CalendarView.vue'
+import RecordView from '@/pages/DailyWorkoutRecord/record/RecordView.vue'
 
 
 const routes = [
