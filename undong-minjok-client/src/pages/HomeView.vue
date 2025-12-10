@@ -145,22 +145,7 @@ export default {
     return {
       page: 1,
       pageSize: 6,
-
-      // ❗ 기존 더미 데이터 = 유지
-      templates: Array.from({ length: 30 }).map((_, i) => ({
-        id: i + 1,
-        date: `2025-01-${String((i % 28) + 1).padStart(2, "0")}`,
-        tag: "전신 • 루틴",
-        label: "Routine " + (i + 1),
-        title: `템플릿 제목 ${i + 1}`,
-        creator: "Creator" + (i + 1),
-        salesCount: 50 + i,
-        price: (i % 3 === 0 ? 0 : 4900),
-        tags: ["헬스장", "운동"],
-        like: 100 + i
-      })),
-
-      // ⭐ 추가됨: 생성 모달
+      templates: [],
       showCreateModal: false,
     }
   },
@@ -202,24 +187,41 @@ export default {
       this.showCreateModal = true;
     },
 
-    // ⭐ 추가됨: 실제 템플릿 목록 불러오기 (API)
+    // 추가됨: 실제 템플릿 목록 불러오기 (API)
     async loadTemplates() {
       try {
-        const res = await templateApi.getAll();   // GET /api/v1/templates/all
-        this.templates = res.data.data;           // ❗ 기존 templates 필드에 교체
+        const res = await templateApi.getAll();  // GET /api/v1/templates/all
+        const list = res.data.data;
+        const url = import.meta.env.VITE_IMG_BASE_URL;
+
+        // 백엔드 응답 -> 프론트 카드 구조로 매핑
+        this.templates = list.map(t => ({
+          id: t.id,
+          title: t.name,                    // 프론트 title = name
+          creator: "Unknown",               // 백엔드에 아직 없으니 기본값
+          salesCount: t.salesCount ?? 0,    // 백엔드 추가되면 자동반영
+          price: t.price,
+          thumbnailImage: url + t.thumbnailImage,
+          date: "",                         // 필요하면 createdAt 추가
+          tags: [],                         // 필요 시 추가
+          like: t.recommendCount ?? 0,      // API 확장 시 반영
+        }));
+        console.log("템플릿 API 응답 list:", list);
+        console.log("매핑 후 templates:", this.templates);
+
       } catch (err) {
         console.error("템플릿 목록 불러오기 실패", err);
       }
     },
 
-    // ⭐ 추가됨: 템플릿 생성 성공 후 리스트 새로고침
+    // 추가됨: 템플릿 생성 성공 후 리스트 새로고침
     async onTemplateCreated() {
       this.showCreateModal = false;
       await this.loadTemplates();
     },
   },
 
-  // ⭐ 추가됨: 페이지 로드시 템플릿 목록 API 불러오기
+  // 추가됨: 페이지 로드시 템플릿 목록 API 불러오기
   async mounted() {
     await this.loadTemplates();
   }

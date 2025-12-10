@@ -108,6 +108,10 @@ export default api
 //  템플릿 API 전용 함수 (하단에 추가)
 export const templateApi = {
 
+  getAll() {
+    return api.get(`/templates/all`);
+  },
+
   // 상세 조회
   getDetail(id) {
     return api.get(`/templates/${id}`);
