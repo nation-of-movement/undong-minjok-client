@@ -75,7 +75,7 @@
 
           <!-- 판매량으로 변경 -->
           <div class="template-creator">
-            by {{ item.creator }} | 판매량 {{ item.level }}
+            by {{ item.creator }} | 판매량 {{ item.salesCount  }}
           </div>
 
           <!-- 등록 날짜 (하트 위쪽) -->
@@ -99,9 +99,6 @@
               {{ item.price === 0 ? '무료' : '₩' + item.price }}
             </span>
 
-            <button class="buy-btn">
-              {{ item.price === 0 ? '내 기록장에 추가' : '구매하기' }}
-            </button>
           </div>
         </div>
       </article>
@@ -135,12 +132,12 @@ export default {
 
       templates: Array.from({ length: 30 }).map((_, i) => ({
         id: i + 1,
-        date: `2025-01-${String((i % 28) + 1).padStart(2, "0")}`, // 등록날짜 추가
+        date: `2025-01-${String((i % 28) + 1).padStart(2, "0")}`,
         tag: "전신 • 루틴",
         label: "Routine " + (i + 1),
         title: `템플릿 제목 ${i + 1}`,
         creator: "Creator" + (i + 1),
-        level: "⭐⭐⭐", // 별은 유지
+        salesCount: 50 + i,    // ⭐ 판매량 숫자
         price: (i % 3 === 0 ? 0 : 4900),
         tags: ["헬스장", "운동"],
         like: 100 + i
@@ -171,7 +168,7 @@ export default {
       this.$router.push("/month")
     },
     goTemplateDetail(id) {
-      this.$router.push(`/template/${id}`)
+      this.$router.push(`/templates/${id}`)
     },
     goPage(p) {
       this.page = p

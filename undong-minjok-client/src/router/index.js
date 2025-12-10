@@ -17,9 +17,15 @@ const routes = [
       { path: "password/search", component: () => import("@/pages/user/PasswordSearchView.vue") },
       { path: "password/reset", component: () => import("@/pages/user/ResetPasswordView.vue") },
 
-      { path: "profile", component: () => import("@/pages/user/ProfileView.vue"), meta: { requiresAuth: true } },
+      {
+        path: "profile",
+        component: () => import("@/pages/user/ProfileView.vue"),
+        meta: { requiresAuth: true }
+      },
     ]
   },
+
+  // -------------------- 달력 / 운동 기록 --------------------
   {
     path: "/month",
     name: "MonthSelect",
@@ -36,9 +42,15 @@ const routes = [
     name: 'Record',
     component: RecordView,
     props: route => ({ date: route.query.date })
-    // → query 로 넘긴 date를 props 로 받을 수 있게 함
   },
 
+  // -------------------- 템플릿 상세 페이지 --------------------
+  {
+    path: "/templates/:id",
+    name: "TemplateDetail",
+    component: () => import("@/pages/templates/TemplateDetailView.vue"),
+    props: true
+  }
 ];
 
 const router = createRouter({
@@ -46,6 +58,7 @@ const router = createRouter({
   routes,
 });
 
+// -------------------- 인증 라우터 가드 --------------------
 router.beforeEach((to, from, next) => {
   const auth = useAuthStore();
 
