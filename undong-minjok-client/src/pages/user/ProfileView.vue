@@ -48,7 +48,9 @@ const fetchMyInfo = async () => {
     userInfo.value = data
     nickname.value = data.nickname
     bio.value = data.bio || ''
-    profileImageUrl.value = IMAGE_BASE_URL + data.profileImagePath
+    profileImageUrl.value = data.profileImagePath
+      ? IMAGE_BASE_URL + data.profileImagePath
+      : "/default.png";
 
     // auth.user에도 덮어쓰기
     auth.$patch({
