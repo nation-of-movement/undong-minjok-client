@@ -20,3 +20,7 @@ export const uploadProfileImageApi = (file) => {
     headers: { 'Content-Type': 'multipart/form-data' },
   })
 }
+
+export const deleteUserApi = () => {
+  return api.delete('/users')
+}
