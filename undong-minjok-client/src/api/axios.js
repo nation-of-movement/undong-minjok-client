@@ -104,3 +104,48 @@ api.interceptors.response.use(
 );
 
 export default api
+
+//  템플릿 API 전용 함수 (하단에 추가)
+export const templateApi = {
+
+  // 상세 조회
+  getDetail(id) {
+    return api.get(`/templates/${id}`);
+  },
+
+  // 추천하기
+  recommend(id) {
+    return api.post(`/templates/${id}/recommend`);
+  },
+
+  // 추천 취소
+  unRecommend(id) {
+    return api.delete(`/templates/${id}/recommend`);
+  },
+
+  // 구매하기
+  purchase(id) {
+    return api.post(`/templates/${id}/purchase`);
+  },
+
+  // 검색
+  search(name) {
+    return api.get(`/templates/search`, {
+      params: { name }
+    });
+  },
+
+  // 정렬 조회 (추천순/판매순/최신순)
+  getSorted(sort = "LATEST") {
+    return api.get(`/templates/sorted`, {
+      params: { sort }
+    });
+  },
+
+  // 페이지네이션
+  getPaged(page = 1, size = 10, name = "", sort = "LATEST") {
+    return api.get(`/templates/paged`, {
+      params: { page, size, name, sort }
+    });
+  }
+  };
