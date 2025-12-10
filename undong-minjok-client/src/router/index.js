@@ -14,6 +14,7 @@ const routes = [
       { path: "", component: HomeView },
       { path: "login", component: () => import("@/pages/user/LoginView.vue") },
       { path: "signup", component: () => import("@/pages/user/SignupView.vue") },
+      { path: "id/search", component: () => import("@/pages/user/IdSearchView.vue") },
       { path: "password/search", component: () => import("@/pages/user/PasswordSearchView.vue") },
       { path: "password/reset", component: () => import("@/pages/user/ResetPasswordView.vue") },
 
