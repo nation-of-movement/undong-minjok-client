@@ -13,11 +13,11 @@
             <th style="width: 40px;">↕</th>
             <th>운동명</th>
             <th>부위</th>
+            <th>기구</th>
             <th>횟수</th>
             <th>중량</th>
             <th>시간</th>
-            <th>기구</th>
-            <th>삭제</th>
+            <th></th>
           </tr>
           </thead>
 
@@ -37,10 +37,6 @@
 
                 <td><input v-model="row.exerciseName" /></td>
                 <td><input v-model="row.part" /></td>
-                <td><input type="number" v-model.number="row.reps" /></td>
-                <td><input type="number" v-model.number="row.weight" /></td>
-                <td><input type="number" v-model.number="row.duration" /></td>
-
                 <td>
                   <input
                     class="equipment-input"
@@ -50,6 +46,11 @@
                     @click="openModal(idx)"
                   />
                 </td>
+                <td><input type="number" v-model.number="row.reps" /></td>
+                <td><input type="number" v-model.number="row.weight" /></td>
+                <td><input type="number" v-model.number="row.duration" /></td>
+
+
 
                 <td>
                   <button class="delete-btn" @click="deleteRow(idx)">×</button>
