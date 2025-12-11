@@ -8,7 +8,7 @@
         <p>오늘의 운동을 기록하러 가보세요!</p>
       </div>
 
-      <div class="feature-card">
+      <div class="feature-card"  @click="goToCharge">
         <h3>💳 충전하기</h3>
         <p>프리미엄 기능을 지금 바로 이용해보세요.</p>
       </div>
@@ -147,6 +147,7 @@ import { useAuthStore } from "@/stores/authStore"
 import TemplateList from "@/pages/templates/TemplateList.vue";
 import CreateTemplateModal from "@/pages/templates/CreateTemplateModal.vue";
 import { templateApi } from "@/api/axios";
+import { useRouter } from 'vue-router'
 
 export default {
   name: "HomeView",
@@ -199,6 +200,10 @@ export default {
 
     openCreateModal() {
       this.showCreateModal = true;
+    },
+
+    goToCharge() {
+      this.$router.push("/point-charge")
     },
 
     async fetchTemplates() {
@@ -256,7 +261,7 @@ export default {
 
 <style scoped>
 
-/* ⭐ 검색바 + 정렬탭 같은 줄 */
+/* 검색바 + 정렬탭 같은 줄 */
 .search-sort-row {
   display: flex;
   justify-content: space-between;
