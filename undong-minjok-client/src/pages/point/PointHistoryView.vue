@@ -32,6 +32,20 @@ const detailInfo = reactive({
   templateName: '',
 })
 
+function formatDate(dateString) {
+  const date = new Date(dateString);
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+
+  return `${year}.${month}.${day} ${hours}:${minutes}`;
+}
+
+
 const controlBodyScroll = () => {
   // 두 모달 중 하나라도 열려 있으면 true
   const isAnyModalOpen = isModalOpen.value || isDetailModalOpen.value;
@@ -44,6 +58,7 @@ const controlBodyScroll = () => {
     document.body.style.overflow = '';
   }
 };
+
 const openModal = () => {
   // 초기화
   withdrawInfo.accountNumber = ''
@@ -52,6 +67,7 @@ const openModal = () => {
   controlBodyScroll();
   isModalOpen.value = true
 }
+
 watch(isModalOpen, controlBodyScroll);
 watch(isDetailModalOpen, controlBodyScroll);
 const closeModal = () => {
@@ -59,6 +75,7 @@ const closeModal = () => {
   isDetailModalOpen.value = false
 
 }
+
 const formatNumberWithCommas = (value) => {
   if (value === null || value === undefined || isNaN(value)) {
     return '0'; // 또는 value;
@@ -206,7 +223,7 @@ const goPointHistoryDetail = async (pointId) => {
     detailInfo.accountNumber = maskAccountNumber(data.accountNumber)
     detailInfo.amount = data.amount ;
     detailInfo.bank = data.bank ? KOREA_BANK_LIST[data.bank].label : null;
-    detailInfo.createdDt = data.createdDt
+    detailInfo.createdDt = formatDate(data.createdDt);
     detailInfo.method = data.paymentMethod
     detailInfo.pointStatus = data.pointStatus
     detailInfo.templdateName = data.templateName
@@ -349,7 +366,7 @@ const goPointHistoryDetail = async (pointId) => {
   <div v-if="isDetailModalOpen" class="modal-overlay">
     <div class="modal-block">
       <div class="detail-modal-header">
-        <sapn class="font-gray">{{ detailInfo.createdDt.split('T')[0] }}</sapn>
+        <sapn class="font-gray">{{ detailInfo.createdDt }}</sapn>
         <h3 v-if="POINT_STATS_TAG[detailInfo.pointStatus]">
           {{ POINT_STATS_TAG[detailInfo.pointStatus].contents }}
         </h3>
@@ -368,7 +385,7 @@ const goPointHistoryDetail = async (pointId) => {
         <div class="detail-contents"  v-if="detailInfo.pointStatus != 'EARN'">
           <div class="detail-between">
             <span>결제 수단</span>
-            <span v-if="PAYMENT_METHOD[detailInfo.method]" >{{PAYMENT_METHOD[detailInfo.method].label }}</span>
+            <span>{{ detailInfo.method }}</span>
           </div>
           <div v-if="PAYMENT_METHOD[detailInfo.method] && PAYMENT_METHOD[detailInfo.method].type == 'BANK_TRANSFER'">
             <div class="detail-between">
