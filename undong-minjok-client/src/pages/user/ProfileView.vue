@@ -202,6 +202,7 @@ const confirmDeleteUser = async () => {
  * 비밀번호 변경 모달 로직
  * ================================ */
 import { usePasswordSearchStore } from "@/stores/passwordSearchStore";
+import PointHistoryView from '@/pages/point/PointHistoryView.vue'
 const passwordResetStore = usePasswordSearchStore();
 
 const showPasswordModal = ref(false);
@@ -651,7 +652,7 @@ onMounted(() => {
         <!-- 다른 탭 -->
         <div v-else-if="activeMenu === 'points'" class="card">
           <h3 class="card-title">포인트 이력</h3>
-          <p class="empty-text">준비중입니다.</p>
+         <PointHistoryView />
         </div>
 
         <!-- ================= 구매 내역 ================= -->
