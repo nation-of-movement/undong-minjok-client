@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted, reactive, readonly, ref, watch } from 'vue'
-import { fetchPointHistory , withdrawApi} from '@/api/pointApi.js'
-import { POINT_STATS_TAG, KOREA_BANK_LIST } from '@/pages/point/pointTag.js'
+import { fetchPointHistory, fetchPointHistoryDetail, withdrawApi } from '@/api/pointApi.js'
+import { POINT_STATS_TAG, KOREA_BANK_LIST , PAYMENT_METHOD} from '@/pages/point/pointTag.js'
 import './pointTagCss.css'
 const pointHistory = ref([]) // 포인트 히스토리 내역
 const pointStatus = ref([]) // 포인트 상태 리스트
@@ -11,56 +11,90 @@ const totalPoint = readonly(_totalPoint)
 const _sellingPoint = ref(0)
 const sellingPoint = readonly(_sellingPoint)
 // 모달
+const detailLabel = ref('포인트')
+const detailUnit = ref('P')
 const isModalOpen = ref(false)
-const feeCharge = ref(0);
+const isDetailModalOpen = ref(false)
+const feeCharge = ref(0)
 const withdrawInfo = reactive({
-  amount : 0,
-  bank : '',
-  accountNumber : ''
+  amount: 0,
+  bank: '',
+  accountNumber: '',
 })
+
+const detailInfo = reactive({
+  accountNumber: '',
+  amount: 0,
+  bank: '',
+  createdDt: '',
+  method: '',
+  pointStatus: '',
+  templateName: '',
+})
+
+const controlBodyScroll = () => {
+  // 두 모달 중 하나라도 열려 있으면 true
+  const isAnyModalOpen = isModalOpen.value || isDetailModalOpen.value;
+
+  if (isAnyModalOpen) {
+    // 모달이 열리면 배경 스크롤 숨김
+    document.body.style.overflow = 'hidden';
+  } else {
+    // 모달이 모두 닫히면 스크롤 복원
+    document.body.style.overflow = '';
+  }
+};
 const openModal = () => {
   // 초기화
-  withdrawInfo.accountNumber = '';
-  withdrawInfo.bank = '';
-  withdrawInfo.amount = 0;
-
+  withdrawInfo.accountNumber = ''
+  withdrawInfo.bank = ''
+  withdrawInfo.amount = 0
+  controlBodyScroll();
   isModalOpen.value = true
 }
-
+watch(isModalOpen, controlBodyScroll);
+watch(isDetailModalOpen, controlBodyScroll);
 const closeModal = () => {
   isModalOpen.value = false
-}
+  isDetailModalOpen.value = false
 
+}
+const formatNumberWithCommas = (value) => {
+  if (value === null || value === undefined || isNaN(value)) {
+    return '0'; // 또는 value;
+  }
+
+  return Number(value).toLocaleString('ko-KR');
+};
 const loadPointHistory = async (status) => {
   try {
     const response = await fetchPointHistory(status)
-    return response.data.data;
+    return response.data.data
   } catch (e) {
     console.error(e)
   }
 }
 
 const withdraw = async () => {
-
   let payload = {
-    point : withdrawInfo.amount
-    , bank : withdrawInfo.bank
-    , accountNumber : withdrawInfo.accountNumber
+    point: withdrawInfo.amount,
+    bank: withdrawInfo.bank,
+    accountNumber: withdrawInfo.accountNumber,
   }
 
-  console.log('payload' ,payload)
+  console.log('payload', payload)
   try {
-    const response = await withdrawApi(payload);
-    if(response.data.success){
-      alert("출금되었습니다.");
-      closeModal();
+    const response = await withdrawApi(payload)
+    if (response.data.success) {
+      alert('출금되었습니다.')
+      closeModal()
     }
   } catch (e) {
-    console.error(e);
-    closeModal();
-    alert("포인트 출금 실패했습니다.");
+    console.error(e)
+    closeModal()
+    alert('포인트 출금 실패했습니다.')
   } finally {
-    const result = await loadPointHistory();
+    const result = await loadPointHistory()
     if (result) {
       pointHistory.value = result.points
       pointStatus.value = result.pointStatuses
@@ -68,34 +102,27 @@ const withdraw = async () => {
       _sellingPoint.value = result.sellingPoint == null ? 0 : result.sellingPoint
     }
   }
-
-
 }
-
 
 const onWithdraw = () => {
-
   if (withdrawInfo.amount <= 0) {
-    alert("출금 포인트를 입력해주세요.");
-    return;
+    alert('출금 포인트를 입력해주세요.')
+    return
   }
 
-  if(withdrawInfo.bank == '') {
-    alert("은행을 선택해주세요.");
-    return;
+  if (withdrawInfo.bank == '') {
+    alert('은행을 선택해주세요.')
+    return
   }
   if (!withdrawInfo.accountNumber || withdrawInfo.accountNumber.length < 9) {
-    alert("계좌번호를 다시 확인해주세요.");
-    return;
+    alert('계좌번호를 다시 확인해주세요.')
+    return
   }
 
+  console.log(withdrawInfo);
   // 출금 api
-  withdraw();
-
-
-
+  withdraw()
 }
-
 
 onMounted(async () => {
   const result = await loadPointHistory()
@@ -128,25 +155,69 @@ const addAmount = (price) => {
     return
   }
 
-  withdrawInfo.amount += price;
+  withdrawInfo.amount += price
 }
 
 watch(
   () => withdrawInfo.amount,
   (newVal) => {
-    let num = 0.5;
-    feeCharge.value = newVal * (num / 100);
+    let num = 0.5
+    feeCharge.value = newVal * (num / 100)
 
     if (newVal > totalPoint.value) {
-      withdrawInfo.amount = totalPoint.value;
+      withdrawInfo.amount = totalPoint.value
     }
-  }
+  },
 )
 /*
 watch(() => withdrawInfo.bank, (v) => {
   console.log("선택된 은행:", v)
 })*/
 
+// 마스킹
+const maskAccountNumber = (accountNumber) => {
+  const PREFIX_LEN = 3;
+  const SUFFIX_LEN = 3;
+
+  if (!accountNumber || accountNumber.length < 0) {
+    return;
+  }
+
+  const totalLength = accountNumber.length;
+  const maskLength = totalLength - PREFIX_LEN - SUFFIX_LEN;
+  const maskedStars = '*'.repeat(maskLength);
+  const prefix = accountNumber.slice(0, PREFIX_LEN);
+  const suffix = accountNumber.slice(-SUFFIX_LEN);
+  return prefix + maskedStars + suffix;
+
+}
+
+// 포인트 내역 상세
+const goPointHistoryDetail = async (pointId) => {
+  isDetailModalOpen.value = true
+
+  // detail 가져오기
+  try {
+    const response = await fetchPointHistoryDetail(pointId)
+    console.log('detail', response.data.data)
+
+    const data = response.data.data.pointDetailDTO
+
+    detailInfo.accountNumber = maskAccountNumber(data.accountNumber)
+    detailInfo.amount = data.amount
+    detailInfo.bank = data.bank ? KOREA_BANK_LIST[data.bank].label : null;
+    detailInfo.createdDt = data.createdDt
+    detailInfo.method = data.paymentMethod
+    detailInfo.pointStatus = data.pointStatus
+    detailInfo.templdateName = data.templateName
+    detailInfo.totalPoint = response.data.data.totalPoint
+
+    detailLabel.value = detailInfo.pointStatus === 'RECHARGE' ? '결제금액' : '포인트'
+    detailUnit.value = detailInfo.pointStatus === 'RECHARGE' ? '원' : 'P'
+  } catch (e) {
+    console.error(e)
+  }
+}
 </script>
 
 <template>
@@ -154,7 +225,7 @@ watch(() => withdrawInfo.bank, (v) => {
     <div class="point-block">
       <div class="point-sub-block">
         <span>마이 포인트 </span>
-        <span>{{ totalPoint }}P</span>
+        <span>{{ formatNumberWithCommas(totalPoint) }}P</span>
       </div>
       <div class="point-btn-block">
         <router-link to="/point-charge"><button class="btn-red">충전</button></router-link>
@@ -163,7 +234,7 @@ watch(() => withdrawInfo.bank, (v) => {
     </div>
     <div class="point-sub-block">
       <span>판매 포인트 </span>
-      <span>{{ sellingPoint }}P</span>
+      <span>{{ formatNumberWithCommas(sellingPoint) }}P</span>
     </div>
   </div>
 
@@ -186,13 +257,13 @@ watch(() => withdrawInfo.bank, (v) => {
         </div>
       </div>
 
-      <div class="info-block">
+      <div class="info-block" @click="goPointHistoryDetail(item.pointId)">
         <div class="info-block-title">{{ POINT_STATS_TAG[item.pointStatus]?.contents }}</div>
-        <div v-if="item.templateNme">{{ item.templateName }}</div>
+        <div v-if="item.templateName">{{ item.templateName }}</div>
         <span class="info-block-date">{{ item.createdDt.split('T')[0] }}</span>
       </div>
       <div class="point-block">
-        <span>{{ item.amount ?? 0 }}</span>
+        <span>{{ formatNumberWithCommas(item.amount) ?? 0 }}</span>
       </div>
     </div>
   </template>
@@ -209,13 +280,13 @@ watch(() => withdrawInfo.bank, (v) => {
         <h3>포인트 출금</h3>
       </div>
       <div class="modal-contents">
-        <div class="modal-point ">
+        <div class="modal-point">
           <div>
             <span><strong> 출금금액</strong></span>
           </div>
           <div>
             <span>마이 포인트: </span>
-            <span class="red-font">{{totalPoint == null ? 0 : totalPoint }}</span>
+            <span class="red-font">{{ formatNumberWithCommas(totalPoint) ?? 0 }}</span>
             <span> P</span>
           </div>
         </div>
@@ -230,7 +301,7 @@ watch(() => withdrawInfo.bank, (v) => {
           <div class="bottom-card">
             <div class="fee-info-text">
               <span>수수료 금액 : </span>
-              <span>{{ feeCharge }}원 / {{ withdrawInfo.amount - feeCharge }}</span>
+              <span>{{ formatNumberWithCommas(feeCharge) }}원 / {{ formatNumberWithCommas(withdrawInfo.amount - feeCharge) }}</span>
             </div>
             <div class="btn-card">
               <button @click="addAmount(0)">초기화</button>
@@ -239,7 +310,6 @@ watch(() => withdrawInfo.bank, (v) => {
               <button @click="addAmount(10000)">+10,000원</button>
             </div>
           </div>
-
         </div>
         <div class="fee-text">
           <span><strong>포인트 출금 수수료는 0.5%입니다.</strong></span>
@@ -259,17 +329,62 @@ watch(() => withdrawInfo.bank, (v) => {
           </div>
           <div class="madal-bank-input">
             <span><strong>계좌번호</strong></span>
-            <input type="text" maxlength="14"
-                   @input="withdrawInfo.accountNumber = withdrawInfo.accountNumber.replace(/\D/g, '')"
-                   v-model="withdrawInfo.accountNumber"
-                   placeholder="계좌번호를 입력해주세요."/>
+            <input
+              type="text"
+              maxlength="14"
+              @input="withdrawInfo.accountNumber = withdrawInfo.accountNumber.replace(/\D/g, '')"
+              v-model="withdrawInfo.accountNumber"
+              placeholder="계좌번호를 입력해주세요."
+            />
           </div>
         </div>
-
       </div>
       <div class="modal-btn">
         <button @click="closeModal" class="btn-white">취소</button>
         <button class="btn-red" @click="onWithdraw">출금</button>
+      </div>
+    </div>
+  </div>
+
+  <div v-if="isDetailModalOpen" class="modal-overlay">
+    <div class="modal-block">
+      <div class="detail-modal-header">
+        <sapn class="font-gray">{{ detailInfo.createdDt.split('T')[0] }}</sapn>
+        <h3 v-if="POINT_STATS_TAG[detailInfo.pointStatus]">
+          {{ POINT_STATS_TAG[detailInfo.pointStatus].contents }}
+        </h3>
+      </div>
+      <div class="detail-modal-contents">
+        <div :class="POINT_STATS_TAG[detailInfo.pointStatus].type" v-if="POINT_STATS_TAG[detailInfo.pointStatus]">
+          {{ POINT_STATS_TAG[detailInfo.pointStatus].label }}
+        </div>
+
+        <div class="detail-contents">
+          <div class="detail-between">
+            <span>{{ detailLabel }}</span>
+            <span>{{ formatNumberWithCommas(detailInfo.amount) }} {{ detailUnit }}</span>
+          </div>
+
+        </div>
+        <div class="detail-contents">
+          <div class="detail-between">
+            <span>결제 수단</span>
+            <span v-if="PAYMENT_METHOD[detailInfo.method]" >{{PAYMENT_METHOD[detailInfo.method].label }}</span>
+          </div>
+          <div v-if="PAYMENT_METHOD[detailInfo.method] && PAYMENT_METHOD[detailInfo.method].type == 'BANK_TRANSFER'">
+            <div class="detail-between">
+              <span>은행</span>
+              <span>{{ detailInfo.bank == null ? null : detailInfo.bank }}</span>
+            </div>
+            <div class="detail-between">
+              <span>계좌이체</span>
+              <span>{{ detailInfo.accountNumber == null ? null : detailInfo.accountNumber }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-btn">
+        <button @click="closeModal" class="btn-white">확인</button>
       </div>
     </div>
   </div>
@@ -301,7 +416,6 @@ watch(() => withdrawInfo.bank, (v) => {
   background: #e60023;
   border-radius: 6px;
   font-weight: 600;
-
 }
 
 .btn-white {
@@ -398,10 +512,13 @@ watch(() => withdrawInfo.bank, (v) => {
   width: 100%;
   text-align: left;
 }
+.modal-block .modal-header font-gray {
+  padding: 10px;
+}
+
 .modal-block .modal-header h3 {
   padding: 15px;
 }
-
 
 .modal-block .modal-contents {
   width: 100%;
@@ -412,7 +529,7 @@ watch(() => withdrawInfo.bank, (v) => {
   display: flex;
   justify-content: center; /* 중앙 정렬 */
   align-items: center;
-  gap: 12px;               /* 버튼 간 간격 */
+  gap: 12px; /* 버튼 간 간격 */
   margin-top: 20px;
   margin-bottom: 20px;
 }
@@ -455,7 +572,7 @@ input[type='number'] {
 }
 
 .btn-card {
-/*  background-color: #11c46b;*/
+  /*  background-color: #11c46b;*/
   width: 460px;
   display: flex;
   justify-content: end;
@@ -469,13 +586,13 @@ input[type='number'] {
   border-radius: 5px;
   border: 1px solid #e60023;
 }
-.modal-bank{
+.modal-bank {
   width: 100px;
   padding: 40px 20px;
 }
 .madal-bank-select {
   width: 460px;
-/*  background-color: #777777;*/
+  /*  background-color: #777777;*/
   padding-top: 10px;
   padding-bottom: 10px;
 }
@@ -493,7 +610,7 @@ input[type='number'] {
   display: flex;
   justify-content: start;
   align-items: center;
- /* background-color: #777777;*/
+  /* background-color: #777777;*/
 }
 
 .madal-bank-input input {
@@ -501,7 +618,7 @@ input[type='number'] {
   padding: 10px 40px 10px 12px;
   border-radius: 5px;
   margin-left: 15px;
-  border: 1px ;
+  border: 1px;
 }
 
 .fee-text {
@@ -517,13 +634,47 @@ input[type='number'] {
   display: flex;
   justify-content: start;
   align-items: center;
-
 }
 
-.bottom-card{
-/*  background-color: #ff4c4c;*/
+.bottom-card {
+  /*  background-color: #ff4c4c;*/
   width: 100%;
   display: flex;
   justify-content: space-between;
+}
+
+.detail-modal-header {
+  width: 500px;
+  display: flex;
+  flex-direction: column; /* 세로로 쌓기 */
+  justify-content: center; /* 세로 중앙 정렬 */
+  align-items: flex-start; /* 왼쪽 정렬 */
+  color: white; /* 글자색은 필요시 */
+}
+.detail-modal-header .font-gray {
+  padding-top: 50px;
+  padding-left: 24px;
+  font-size: 13px;
+  color: #f0f0f0;
+}
+.detail-modal-header h3 {
+  font-size: 20px;
+  padding-left: 22px;
+  margin: 0;
+}
+.detail-modal-contents {
+  width: 100%;
+  padding: 30px 10px 30px 80px;
+}
+.detail-contents {
+  width: 440px;
+  padding-top: 20px;
+}
+
+.detail-between {
+  width: 400px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
 }
 </style>
