@@ -18,48 +18,35 @@
       </div>
     </div>
 
-    <div class="wrapper">
-      <div class="box_section">
-        <!-- 결제 UI -->
-        <div id="payment-method"></div>
-
-        <!-- 이용약관 UI -->
-        <div id="agreement"></div>
-
-        <!-- 결제하기 버튼 -->
-        <div class="div-btn">
-          <button :disabled="!ready" @click="checkAmount" class="button payments-btn" style="margin-top: 30px">
-            결제하기
-          </button>
-        </div>
-      </div>
-
-      <div
-        class="box_section"
-        style="padding: 40px 30px 50px 30px; margin-top: 30px; margin-bottom: 50px"
-      ></div>
+    <!-- 결제하기 버튼 -->
+    <div class="div-btn">
+      <button :disabled="!ready" @click="requestPayment" class="button payments-btn" style="margin-top: 30px">
+        결제하기
+      </button>
     </div>
   </div>
-
 </template>
 
 <script setup>
 import { ref, reactive, onMounted, watch } from 'vue'
-import { loadTossPayments, ANONYMOUS } from '@tosspayments/tosspayments-sdk'
-import { paymentsPrepareApi } from '@/api/paymentsApi.js'
-
+import { loadTossPayments } from "@tosspayments/tosspayments-sdk"
+const tossPayments = await loadTossPayments(clientKey);
 // 랜덤 문자열 생성
 function generateRandomString() {
   return window.btoa(Math.random().toString()).slice(0, 20)
 }
 
+
 // TODO: clientKey는 개발자센터 결제위젯 연동 키로 교체
-const clientKey = 'test_gck_docs_Ovk5rk1EwkEbP0W43n07xlzm'
+const clientKey = 'test_ck_LlDJaYngroa7b9vy92zm3ezGdRpX'
 const customerKey = generateRandomString()
+loadTossPayments(clientKey).then((tossPayments) => {
+
+  console.log( "#### " , tossPayments);
+
+});
 
 // 상태 정의
-const ready = ref(false)
-const widgets = ref(null)
 const amount = reactive({
   currency: 'KRW',
   value: 0,
@@ -73,37 +60,9 @@ const addAmount = (price) => {
   }
 
   amount.value += price;
+  console.log(amount.value);
 }
 
-// TossPayments 위젯 가져오기
-async function fetchPaymentWidgets() {
-  try {
-    const tossPayments = await loadTossPayments(clientKey)
-
-    // 회원 결제
-    widgets.value = tossPayments.widgets({ customerKey })
-  } catch (error) {
-    console.error('Error fetching payment widget:', error)
-  }
-}
-
-// 결제 위젯 렌더링
-async function renderPaymentWidgets() {
-  if (!widgets.value) return
-
-  await Promise.all([
-    widgets.value.renderPaymentMethods({
-      selector: '#payment-method',
-      variantKey: 'DEFAULT',
-    }),
-    widgets.value.renderAgreement({
-      selector: '#agreement',
-      variantKey: 'AGREEMENT',
-    }),
-  ])
-
-  ready.value = true
-}
 
 // 결제 요청 전 금액확인
 function checkAmount() {
@@ -112,16 +71,18 @@ function checkAmount() {
     return
   }
 
+  alert("결제");
   // 결제요청
   requestPayment()
 }
 
-async function setAmount() {
+/*async function setAmount() {
+  console.log("setAmount");
   await widgets.value.setAmount({
     currency: 'KRW',
     value: amount.value,
   })
-}
+}*/
 
 // 결제 요청
 async function requestPayment() {
@@ -129,44 +90,42 @@ async function requestPayment() {
 
   let orderId = generateRandomString();
 
-
-  let payload = {
-    orderId : orderId
-    , amount : amount.value
-  }
-
-  try {
-    // orderId, amount 서버 임시로 저장
-    await paymentsPrepareApi(payload);
-
-    // 결제 요청
-    await widgets.value.requestPayment({
-      orderId: orderId, // 주문 고유 ID
-      orderName: `포인트 충전 ${amount.value}원`, // 결제명
-      successUrl: window.location.origin + '/success', // 결제 성공 후 이동할 페이지
-      failUrl: window.location.origin + '/fail', // 결제 실패 후 이동할 페이지
-      customerEmail: 'lala19873@naver.com',
-      customerName: '김토스',
-      customerMobilePhone: '01012345678', // 필요 시 추가
-    })
-  } catch (error) {
-    console.error('결제 실패:', error)
-    alert('결제에 실패했습니다. 다시 시도해주세요.')
-  }
+  await payment.requestPayment({
+        method: "CARD", // 카드 결제
+        amount: {
+          currency: "KRW",
+          value: 50000,
+        },
+        orderId: "8SjcU9Kdpq6hNC3WdqhzD", // 고유 주문번호
+        orderName: "토스 티셔츠 외 2건",
+        successUrl: window.location.origin + "/success", // 결제 요청이 성공하면 리다이렉트되는 URL
+        failUrl: window.location.origin + "/fail", // 결제 요청이 실패하면 리다이렉트되는 URL
+        customerEmail: "customer123@gmail.com",
+        customerName: "김토스",
+        customerMobilePhone: "01012341234",
+        // 카드 결제에 필요한 정보
+        card: {
+          useEscrow: false,
+          flowMode: "DEFAULT", // 통합결제창 여는 옵션
+          useCardPoint: false,
+          useAppCardOnly: false,
+        },
+  });
 }
 
+/*
 watch(
   () => amount.value,
   async () => {
     await setAmount();
   }
 )
+*/
 
 // 마운트 시 위젯 초기화
 onMounted(async () => {
-  await fetchPaymentWidgets()
-  await setAmount()
-  await renderPaymentWidgets()
+ // await setAmount()
+
 })
 </script>
 <style scoped>
@@ -180,7 +139,7 @@ html {
   flex-direction: column;
   align-items: center; /* 가로 중앙 */
   justify-content: center; /* 세로 중앙 */
-  min-height: 100vh; /* 화면 전체 높이 */
+
   width: 700px; /* 원하는 폭 */
   margin: 0 auto; /* 혹시 flex 안 쓰는 경우 가로 중앙 */
   background-color: white;

@@ -46,7 +46,7 @@ const routes = [
     // → query 로 넘긴 date를 props 로 받을 수 있게 함
   },
 // 포인트 - 결제하기
-  { path: '/payments', name: 'PointPayments',component: PointPaymentsView },
+  { path: '/point-charge', name: 'PointPayments',component: PointPaymentsView , props: true},
   {
     path: "/success",
     name: "Success",
