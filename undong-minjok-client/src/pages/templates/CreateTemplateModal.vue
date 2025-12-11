@@ -4,12 +4,10 @@
 
       <h2 class="modal-title">새 템플릿 등록하기</h2>
 
-      <!-- ⭐⭐ 2컬럼 레이아웃 -->
+      <!-- 2컬럼 레이아웃 -->
       <div class="modal-body-grid">
 
-        <!-- ========================================================= -->
         <!-- LEFT AREA (기본정보 + Day + 운동 목록)                   -->
-        <!-- ========================================================= -->
         <div class="left-panel">
           <div class="section">
             <label>템플릿 제목</label>
@@ -54,23 +52,19 @@
               <input v-model.number="ex.weight" class="input-sm" type="number" placeholder="무게(kg)" />
               <input v-model.number="ex.duration" class="input-sm" type="number" placeholder="시간(sec)" />
 
-              <!-- 🔥 부위: /parts API 에서 불러온 목록 -->
-              <select
-                v-model="ex.partId"
+              <!-- 부위 직접 입력 -->
+              <input
+                v-model="ex.part"
                 class="input-sm"
-                @change="onPartChange(ex)"
-              >
-                <option :value="null">부위 선택</option>
-                <option v-for="p in parts" :key="p.id" :value="p.id">
-                  {{ p.name }}
-                </option>
-              </select>
+                type="text"
+                placeholder="부위 입력 (예: 가슴, 등, 하체)"
+              />
 
-              <!-- 🔥 장비: 선택한 부위(partId)에 따라 /equipments API 호출한 결과 -->
+              <!-- 장비 -->
               <select v-model="ex.equipmentId" class="input-sm">
                 <option :value="null">장비 없음</option>
                 <option
-                  v-for="eq in (equipmentMap[ex.partId] || [])"
+                  v-for="eq in equipments"
                   :key="eq.id"
                   :value="eq.id"
                 >
@@ -81,17 +75,12 @@
               <button class="delete-btn" @click="removeExercise(idx)">삭제</button>
             </div>
 
+
             <button class="add-btn" @click="addExercise">+ 운동 추가</button>
-          </div>
-
-
-          <button class="add-btn" @click="addExercise">+ 운동 추가</button>
           </div>
         </div>
 
-        <!-- ========================================================= -->
         <!-- RIGHT AREA (이미지 업로드 두 개) — 고정, 스크롤 안됨      -->
-        <!-- ========================================================= -->
         <div class="right-panel">
           <h3 class="right-title">이미지 등록</h3>
 
@@ -102,7 +91,7 @@
             <div class="image-preview-frame">
               <img
                 v-if="previewThumbnail"
-                :src="BASE_URL + previewThumbnail"
+                :src="previewThumbnail"
                 class="image-preview"
               />
               <div v-else class="image-preview empty">이미지를 선택하세요</div>
@@ -116,7 +105,7 @@
             <div class="image-preview-frame">
               <img
                 v-if="previewDetail"
-                :src="BASE_URL + previewDetail"
+                :src="previewDetail"
                 class="image-preview"
               />
               <div v-else class="image-preview empty">이미지를 선택하세요</div>
@@ -133,13 +122,12 @@
       </div>
 
     </div>
-
+  </div>
 </template>
 
+
 <script>
-import api from "@/api/axios";            // 기존 axios 인스턴스
-import partsApi from "@/api/partApi";    // /parts
-import equipmentApi from "@/api/equipmentApi"; // /equipments?part=...
+import api from "@/api/axios";
 
 export default {
   name: "CreateTemplateModal",
@@ -158,20 +146,15 @@ export default {
 
       currentDay: 1,
 
-      // 7일 운동
       dayExercises: {
         1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [],
       },
-
-      // 🔥 부위 / 장비용 상태
-      parts: [],               // /parts 결과
-      equipmentMap: {},        // { [partId]: [equipments...] }
+      equipments: [],
     };
   },
 
   async created() {
-    // 모달 열릴 때 부위 목록 먼저 한 번 가져오기
-    await this.fetchParts();
+    await this.fetchEquipments();
   },
 
   methods: {
@@ -195,38 +178,14 @@ export default {
       }
     },
 
-    /* ================= 부위 / 장비 API ================= */
-
-    async fetchParts() {
+    async fetchEquipments() {
       try {
-        const res = await partsApi.getParts();
-        // ApiResponse 형태면 res.data.data, 아니면 res.data
-        this.parts = res.data.data || res.data || [];
-      } catch (e) {
-        console.error("부위 목록 로드 실패", e);
-      }
-    },
-
-    async fetchEquipmentsByPart(partId) {
-      if (!partId) return;
-
-      // 이미 가져온 부위면 다시 호출하지 않음
-      if (this.equipmentMap[partId]) return;
-
-      try {
-        const res = await equipmentApi.getEquipmentsByPart(partId);
-        const list = res.data.data || res.data || [];
-        // 객체에 동적으로 키 추가 (Options API에서는 이렇게)
-        this.$set(this.equipmentMap, partId, list);
+        const res = await api.get("/equipments/all")
+        this.equipments = res.data.data || res.data || [];
+        console.log("장비 목록:", this.equipments);
       } catch (e) {
         console.error("장비 목록 로드 실패", e);
       }
-    },
-
-    onPartChange(ex) {
-      // 부위 선택 바뀌면 해당 부위의 장비 목록 로드 + 장비 선택 초기화
-      this.fetchEquipmentsByPart(ex.partId);
-      ex.equipmentId = null;
     },
 
     /* ================= 운동 행 추가/삭제 ================= */
@@ -238,12 +197,12 @@ export default {
       this.dayExercises[d].push({
         day: d,
         name: "",
-        partId: null,      // 🔥 부위 id
+        part: null,      //  부위 id
         reps: null,
         weight: null,
         duration: null,
         orderIndex: this.dayExercises[d].length + 1,
-        equipmentId: null, // 🔥 장비 id
+        equipmentId: null, //  장비 id
       });
     },
 
@@ -264,7 +223,7 @@ export default {
           exercises.push({
             day: d,
             name: ex.name,
-            partId: ex.partId,          // 🔥 백엔드 DTO에 맞춰 사용
+            part: ex.part,          // 백엔드 DTO에 맞춰 사용
             reps: ex.reps,
             weight: ex.weight,
             duration: ex.duration,
@@ -334,7 +293,7 @@ export default {
 .modal-body-grid {
   display: flex;
   gap: 30px;
-  height: 70vh;        /* 두 패널을 같은 높이로 맞춤 */
+  height: 70vh;
 }
 
 input[type="number"]::-webkit-outer-spin-button,
@@ -363,7 +322,7 @@ input[type="number"] {
   padding: 20px;
   border-radius: 12px;
   border: 1px solid rgba(255,255,255,0.12);
-  height: 70%;
+  height: 80%;
   position: sticky;
   top: 0;
 }

@@ -50,22 +50,13 @@
     <section class="bottom-section">
       <!-- LEFT 3 -->
       <div class="bottom-left">
-        <p class="description">{{ template.description }}</p>
 
         <div class="benefit-section">
           <h3 class="benefit-title">수강 후 이런걸 얻을 수 있어요</h3>
 
           <div class="benefit-box">
-            <div class="benefit-item">
-              <span class="check">✔</span> 좋은 운동 루틴을 스스로 구성할 수 있는 기준이 생깁니다.
-            </div>
-
-            <div class="benefit-item">
-              <span class="check">✔</span> 7일 분할 루틴을 반복하며 운동 습관이 형성됩니다.
-            </div>
-
-            <div class="benefit-item">
-              <span class="check">✔</span> 자신의 체력에 맞는 난이도와 강도를 이해하게 됩니다.
+            <div class="benefit-item" v-for="(line, idx) in benefitLines" :key="idx">
+              <span class="check">✔</span> {{ line }}
             </div>
           </div>
         </div>
@@ -154,12 +145,22 @@ export default {
         level: '',
         thumbnail: '',
         description: '',
-        date: '2025-01-12',
-        isMine: false
+        date: '',
+        isMine: false,
       },
 
       starLevel: '',
     }
+  },
+
+  computed: {
+    benefitLines() {
+      if (!this.template.description) return []
+      return this.template.description
+        .split('\n')
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0)
+    },
   },
 
   async mounted() {
@@ -172,7 +173,7 @@ export default {
         const res = await templateApi.getDetail(id)
         const d = res.data.data
 
-        console.log("🔥 응답받은 isMine:", d.isMine)
+        console.log('🔥 응답받은 isMine:', d.isMine)
 
         // DTO → 화면용 데이터 매핑
         this.template.id = d.id
@@ -233,9 +234,9 @@ export default {
     async purchaseTemplate() {
       try {
         if (this.template.isMine) {
-          alert("본인이 만든 템플릿은 구매할 수 없습니다.");
-          this.showBuyModal = false;
-          return;
+          alert('본인이 만든 템플릿은 구매할 수 없습니다.')
+          this.showBuyModal = false
+          return
         }
 
         const id = this.template.id
@@ -250,8 +251,7 @@ export default {
         console.error('구매 실패', err)
 
         const msg =
-          err.response?.data?.message || err.customMessage ||
-          '구매 중 오류가 발생했습니다.'
+          err.response?.data?.message || err.customMessage || '구매 중 오류가 발생했습니다.'
 
         alert(msg)
 
@@ -426,5 +426,15 @@ export default {
 .notice-box {
   margin-top: 16px;
   opacity: 0.7;
+}
+
+.benefit-list {
+  margin-top: 20px;
+}
+
+.benefit-item {
+  margin-bottom: 6px;
+  font-size: 15px;
+  line-height: 1.5;
 }
 </style>

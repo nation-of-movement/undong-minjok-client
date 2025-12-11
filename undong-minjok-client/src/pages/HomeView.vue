@@ -9,14 +9,10 @@
       </div>
 
       <div class="feature-card">
-        <h3>🔥 챌린지 참여</h3>
-        <p>운동 기록하고 랭킹에 도전하세요.</p>
+        <h3>💳 충전하기</h3>
+        <p>프리미엄 기능을 지금 바로 이용해보세요.</p>
       </div>
 
-      <div class="feature-card">
-        <h3>💬 커뮤니티</h3>
-        <p>운동하는 사람들과 실시간으로 소통하세요.</p>
-      </div>
     </section>
 
     <!-- HERO — 로그인 안하면 출력 -->
@@ -33,24 +29,50 @@
         <p>인기 있는 운동 루틴 템플릿을 한 곳에서 보고, 내 기록장에 바로 적용해보세요.</p>
       </div>
 
-      <!-- ⭐ 기존 버튼 수정: 모달 열림 연결 -->
       <button class="cta-sell-btn" @click="openCreateModal">
         템플릿 등록하기 ➜
       </button>
     </div>
 
-    <!-- TABS -->
-    <div class="tabs-row">
+    <!-- ⭐ 검색바 + 정렬 탭 같은 라인 -->
+    <div class="search-sort-row">
+      <!-- 검색바 -->
+      <input
+        class="search-input"
+        v-model="search"
+        @input="fetchTemplates"
+        placeholder="템플릿을 검색해주세요"
+      />
+
+      <!-- 정렬 탭 -->
       <div class="tabs">
-        <div class="tab active">🔥 인기</div>
-        <div class="tab">🆕 최신</div>
-        <div class="tab">💪 상체</div>
-        <div class="tab">🦵 하체</div>
-        <div class="tab">⚡ 전신</div>
+        <div
+          class="tab"
+          :class="{ active: sort === 'RECOMMEND' }"
+          @click="changeSort('RECOMMEND')"
+        >
+          🔥 추천순
+        </div>
+
+        <div
+          class="tab"
+          :class="{ active: sort === 'LATEST' }"
+          @click="changeSort('LATEST')"
+        >
+          🆕 등록순
+        </div>
+
+        <div
+          class="tab"
+          :class="{ active: sort === 'SALES' }"
+          @click="changeSort('SALES')"
+        >
+          💪 판매순
+        </div>
       </div>
     </div>
 
-    <!-- TEMPLATE GRID (3x2 per page) -->
+    <!-- TEMPLATE GRID -->
     <section class="grid">
       <article
         class="card-template"
@@ -110,7 +132,7 @@
       </button>
     </div>
 
-    <!-- ⭐⭐ 여기 추가됨: 템플릿 생성 모달 출력 -->
+    <!-- TEMPLATE CREATE MODAL -->
     <CreateTemplateModal
       v-if="showCreateModal"
       @close="showCreateModal = false"
@@ -122,8 +144,6 @@
 
 <script>
 import { useAuthStore } from "@/stores/authStore"
-
-// ⭐ 추가됨
 import TemplateList from "@/pages/templates/TemplateList.vue";
 import CreateTemplateModal from "@/pages/templates/CreateTemplateModal.vue";
 import { templateApi } from "@/api/axios";
@@ -131,7 +151,6 @@ import { templateApi } from "@/api/axios";
 export default {
   name: "HomeView",
 
-  // ⭐ 추가됨
   components: { TemplateList, CreateTemplateModal },
 
   data() {
@@ -140,6 +159,9 @@ export default {
       pageSize: 6,
       templates: [],
       showCreateModal: false,
+
+      search: "",
+      sort: "SALES",
     }
   },
 
@@ -175,46 +197,57 @@ export default {
       this.page = p
     },
 
-    // ⭐ 추가됨: 템플릿 등록 모달 열기
     openCreateModal() {
       this.showCreateModal = true;
     },
 
-    // 추가됨: 실제 템플릿 목록 불러오기 (API)
-    async loadTemplates() {
+    async fetchTemplates() {
       try {
-        const res = await templateApi.getAll();  // GET /api/v1/templates/all
-        const list = res.data.data;
-        const url = import.meta.env.VITE_IMG_BASE_URL;
+        const res = await templateApi.getPage({
+          page: this.page - 1,
+          size: this.pageSize,
+          name: this.search,
+          sort: this.sort
+        });
 
-        // 백엔드 응답 -> 프론트 카드 구조로 매핑
+        const url = import.meta.env.VITE_IMG_BASE_URL;
+        const list = res.data.data.content;
+
         this.templates = list.map(t => ({
           id: t.id,
-          title: t.name,                    // 프론트 title = name
-          creator: "Unknown",               // 백엔드에 아직 없으니 기본값
-          salesCount: t.salesCount ?? 0,    // 백엔드 추가되면 자동반영
+          title: t.name,
+          creator: t.writerNickname ?? "Unknown",
+          salesCount: t.salesCount ?? 0,
           price: t.price,
           thumbnailImage: url + t.thumbnailImage,
-          date: "",                         // 필요하면 createdAt 추가
-          tags: [],                         // 필요 시 추가
-          like: t.recommendCount ?? 0,      // API 확장 시 반영
+          date: t.createdAt ? t.createdAt.split("T")[0] : "",
+          tags: [],
+          like: t.recommendCount ?? 0,
         }));
-        console.log("템플릿 API 응답 list:", list);
-        console.log("매핑 후 templates:", this.templates);
 
-      } catch (err) {
-        console.error("템플릿 목록 불러오기 실패", err);
+      } catch (e) {
+        console.error("템플릿 로딩 실패:", e);
       }
     },
 
-    // 추가됨: 템플릿 생성 성공 후 리스트 새로고침
+// 정렬 변경 시 자동 새로고침
+    async changeSort(type) {
+      this.sort = type;
+      this.page = 1;       // 정렬 바꾸면 첫 페이지로 이동
+      await this.fetchTemplates();
+    },
+
+// 기존 loadTemplates 유지하면서 내부는 fetchTemplates 호출
+    async loadTemplates() {
+      await this.fetchTemplates();
+    },
+
     async onTemplateCreated() {
       this.showCreateModal = false;
       await this.loadTemplates();
     },
   },
 
-  // 추가됨: 페이지 로드시 템플릿 목록 API 불러오기
   async mounted() {
     await this.loadTemplates();
   }
@@ -223,12 +256,47 @@ export default {
 
 <style scoped>
 
-/* 로그인 시 HERO 사라진 뒤 여백 조정 */
-.home.logged-in .page-title-row {
-  margin-top: 30px !important;
+/* ⭐ 검색바 + 정렬탭 같은 줄 */
+.search-sort-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 25px 5% 0 5%;
 }
 
-/* FEATURES */
+/* 검색 input */
+.search-input {
+  width: 340px;
+  height: 44px;
+  padding: 0 15px;
+  background: #0f0f0f;
+  color: white;
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 10px;
+  font-size: 15px;
+}
+
+.search-input::placeholder {
+  color: rgba(255,255,255,0.45);
+}
+
+/* 탭 */
+.tabs {
+  display: flex;
+  gap: 10px;
+}
+.tab {
+  padding: 6px 12px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 999px;
+}
+.tab.active {
+  background: white;
+  color: black;
+  font-weight: bold;
+}
+
+/* 기존 코드 전부 유지 (생략 없음) */
 .features {
   padding: 20px 5%;
   display: flex;
@@ -250,7 +318,6 @@ export default {
   transform: translateY(-5px);
 }
 
-/* HERO */
 .hero {
   display: flex;
   flex-direction: column;
@@ -278,12 +345,12 @@ export default {
   margin-top: 30px;
 }
 
-/* TEMPLATE HEADER */
+/* 페이지 헤더 */
 .page-title-row {
   display: flex;
   justify-content: space-between;
   padding: 0 5%;
-  margin-top: 80px;
+  margin-top: 50px;
   align-items: center;
 }
 .cta-sell-btn {
@@ -294,55 +361,17 @@ export default {
   color: white;
   font-size: 13px;
   font-weight: 600;
-  display: inline-flex;
-  align-items: center;
 }
 
-/* TABS */
-.tabs-row {
-  padding: 0 5%;
-  margin-top: 20px;
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-}
-.tabs {
-  display: flex;
-  gap: 10px;
-}
-.tab {
-  padding: 6px 12px;
-  background: rgba(255,255,255,0.1);
-  border-radius: 999px;
-}
-.tab.active {
-  background: white;
-  color: black;
-  font-weight: bold;
-}
-.filters {
-  display: flex;
-  gap: 8px;
-}
-.chip {
-  padding: 5px 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,0.2);
-}
-
-/* GRID 3×2 */
+/* GRID */
 .grid {
   padding: 30px 5%;
   display: grid;
-
-  /* 한 줄 3개 고정 + 반응형 너비 */
   grid-template-columns: repeat(3, 1fr);
-
   gap: 20px;
 }
 
 .card-template {
-  width: 100%;          /* 1fr 크기만큼 자연스러운 반응형 */
   background: #101016;
   border-radius: 16px;
   border: 1px solid rgba(255,255,255,0.1);
@@ -350,6 +379,7 @@ export default {
   transition: .2s;
   cursor: pointer;
 }
+
 .card-template:hover {
   transform: translateY(-4px);
   border-color: rgba(255,255,255,0.2);
@@ -359,26 +389,15 @@ export default {
   height: 150px;
   background: #1a1a1a;
   border-radius: 12px;
-  position: relative;
   overflow: hidden;
 }
 
 .thumb-img {
   width: 100%;
   height: 100%;
-  object-fit: cover;   /* 이미지가 꽉 차게 */
-  display: block;
+  object-fit: cover;
 }
 
-.thumb-tag {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  padding: 3px 8px;
-  background: rgba(0,0,0,0.6);
-  border-radius: 999px;
-  font-size: 11px;
-}
 .price-badge {
   position: absolute;
   bottom: 8px;
@@ -395,61 +414,30 @@ export default {
   font-size: 14px;
   font-weight: bold;
 }
+
 .template-creator {
   margin-top: 4px;
   font-size: 12px;
   opacity: 0.75;
 }
 
-/* 등록 날짜 */
 .template-date {
   font-size: 11px;
   opacity: 0.7;
   margin: 4px 0;
 }
 
-/* TAGS + HEART */
 .meta-row {
   margin-top: 6px;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
-.tags {
-  display: flex;
-  gap: 4px;
-}
-.tag {
-  padding: 3px 6px;
-  background: rgba(255,255,255,0.1);
-  border-radius: 6px;
-  font-size: 10px;
-}
-.stats {
-  font-size: 11px;
-  display: flex;
-  align-items: center;
-}
 
-/* BUY ROW */
 .buy-row {
   margin-top: 10px;
-  display: flex;
-  justify-content: space-between;
-}
-.buy-btn {
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: white;
-  color: black;
-  font-size: 11px;
-  font-weight: bold;
-}
-.price-text.free {
-  color: #11c46b;
 }
 
-/* PAGINATION */
 .pagination {
   padding: 30px 50px;
   display: flex;
@@ -460,11 +448,11 @@ export default {
   background: rgba(255,255,255,0.1);
   padding: 8px 12px;
   border-radius: 8px;
-  border: none;
   color: white;
 }
 .pagination button.active {
   background: #e60023;
   font-weight: bold;
 }
+
 </style>

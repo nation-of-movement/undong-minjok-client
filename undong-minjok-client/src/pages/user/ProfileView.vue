@@ -2,6 +2,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/authStore'
+import { useRouter } from 'vue-router'
 
 import {
   getMyInfoApi,
@@ -301,6 +302,20 @@ const fetchSales = async () => {
   } finally {
     loadingSales.value = false
   }
+}
+/* ================================
+ * 구매내역전용 각 내역 클릭시 상세 템플릿 이동
+ * ================================ */
+
+const router = useRouter()
+
+const goToTemplateDetail = (templateId) => {
+  if (!templateId) return
+
+  router.push({
+    name: "TemplateDetail",     // 🔥 라우트 name
+    params: { id: templateId }, // 🔥 /templates/:id 의 :id 에 매핑
+  })
 }
 
 /* ================================
@@ -664,6 +679,7 @@ onMounted(() => {
 
           <div v-if="loadingPurchases" class="empty-text">불러오는 중...</div>
           <div v-else-if="!purchaseList.length" class="empty-text">구매 내역이 없습니다.</div>
+
           <div v-else class="history-table history-table--purchase">
             <!-- 헤더 행 -->
             <div class="history-row history-row--head">
@@ -674,7 +690,8 @@ onMounted(() => {
             </div>
 
             <!-- 데이터 행 -->
-            <div v-for="item in purchaseList" :key="item.templateId" class="history-row">
+            <div v-for="item in purchaseList" :key="item.templateId" class="history-row history-row--clickable"
+            @click="goToTemplateDetail(item.templateId)" >
               <div class="col col-name">{{ item.templateName }}</div>
               <div class="col col-desc">구매한 운동 템플릿입니다.</div>
               <div class="col col-price">{{ item.price }} P</div>
@@ -1354,11 +1371,14 @@ onMounted(() => {
 
 
 
+
 .history-row {
   padding: 10px 14px;
   font-size: 13px;
   align-items: center;
+  transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 }
+
 
 .history-row--head {
   background: #FF0033FF;
@@ -1383,7 +1403,18 @@ onMounted(() => {
   padding: 0 6px;
 }
 
+.history-row--clickable {
+  cursor: pointer;
+}
 
+.history-row--clickable:hover {
+  background: rgb(253, 120, 0);
+}
+
+.history-row--clickable:hover .col-name,
+.history-row--clickable:hover .col-desc {
+  color: #fd7800;
+}
 /* 오른쪽 액션 버튼 영역 */
 .col-actions {
   display: flex;
