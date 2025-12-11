@@ -54,7 +54,7 @@
               <input v-model.number="ex.weight" class="input-sm" type="number" placeholder="무게(kg)" />
               <input v-model.number="ex.duration" class="input-sm" type="number" placeholder="시간(sec)" />
 
-              <!-- 🔥 부위: /parts API 에서 불러온 목록 -->
+              <!-- 🔥 부위 -->
               <select
                 v-model="ex.partId"
                 class="input-sm"
@@ -66,7 +66,7 @@
                 </option>
               </select>
 
-              <!-- 🔥 장비: 선택한 부위(partId)에 따라 /equipments API 호출한 결과 -->
+              <!-- 🔥 장비 -->
               <select v-model="ex.equipmentId" class="input-sm">
                 <option :value="null">장비 없음</option>
                 <option
@@ -81,11 +81,8 @@
               <button class="delete-btn" @click="removeExercise(idx)">삭제</button>
             </div>
 
+            <!-- ✅ 이거 하나만 -->
             <button class="add-btn" @click="addExercise">+ 운동 추가</button>
-          </div>
-
-
-          <button class="add-btn" @click="addExercise">+ 운동 추가</button>
           </div>
         </div>
 
@@ -102,7 +99,7 @@
             <div class="image-preview-frame">
               <img
                 v-if="previewThumbnail"
-                :src="BASE_URL + previewThumbnail"
+                :src="previewThumbnail"
                 class="image-preview"
               />
               <div v-else class="image-preview empty">이미지를 선택하세요</div>
@@ -116,7 +113,7 @@
             <div class="image-preview-frame">
               <img
                 v-if="previewDetail"
-                :src="BASE_URL + previewDetail"
+                :src="previewDetail"
                 class="image-preview"
               />
               <div v-else class="image-preview empty">이미지를 선택하세요</div>
@@ -133,8 +130,9 @@
       </div>
 
     </div>
-
+  </div>
 </template>
+
 
 <script>
 import api from "@/api/axios";            // 기존 axios 인스턴스
