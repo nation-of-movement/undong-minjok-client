@@ -1,12 +1,10 @@
 <template>
   <div class="detail-page">
-
     <!-- HEADER BAR -->
     <HeaderBar />
 
-    <!-- 🔥 TOP: 1 : 2 비율 -->
+    <!-- TOP: 1 : 2 비율 -->
     <section class="top-section">
-
       <!-- LEFT 1 -->
       <div class="top-left">
         <div class="seller-profile">
@@ -16,7 +14,7 @@
             <p class="seller-name">{{ template.awards }}</p>
           </div>
 
-          <!-- ❤️ 추천 하트 + 카운트 -->
+          <!-- 추천 하트 + 카운트 -->
           <div class="like-row">
             <span class="heart-icon" @click="toggleLike">
               <svg v-if="!liked" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
@@ -46,12 +44,10 @@
       <div class="top-right">
         <img class="template-img" :src="template.thumbnail" />
       </div>
-
     </section>
 
     <!-- 🔥 BOTTOM: 3 : 1 비율 -->
     <section class="bottom-section">
-
       <!-- LEFT 3 -->
       <div class="bottom-left">
         <p class="description">{{ template.description }}</p>
@@ -73,16 +69,22 @@
             </div>
           </div>
         </div>
-
       </div>
 
       <!-- RIGHT 1 (SELL BOX) -->
       <div class="sell-box">
         <h2 class="sell-price">
-          {{ template.price === 0 ? "무료" : `₩${template.price}` }}
+          {{ template.price === 0 ? '무료' : `₩${template.price}` }}
         </h2>
 
-        <button class="buy-btn" @click="showBuyModal = true">구매하기</button>
+        <!-- 구매 버튼 조건문 적용 -->
+        <button
+          class="buy-btn"
+          :disabled="template.isMine"
+          @click="!template.isMine && (showBuyModal = true)"
+        >
+          {{ template.isMine ? '내 템플릿입니다' : '구매하기' }}
+        </button>
 
         <div class="sell-meta">
           <p>📅 등록날짜: {{ template.date }}</p>
@@ -93,10 +95,16 @@
         <hr class="divider" />
 
         <div class="info-table">
-          <div class="row"><span class="label">카테고리</span><span>{{ template.category }}</span></div>
+          <div class="row">
+            <span class="label">카테고리</span><span>{{ template.category }}</span>
+          </div>
           <div class="row"><span class="label">구성</span><span>7일 분할 운동 루틴</span></div>
-          <div class="row"><span class="label">운동시간</span><span>{{ template.duration }}</span></div>
-          <div class="row"><span class="label">난이도</span><span>{{ template.level }}</span></div>
+          <div class="row">
+            <span class="label">운동시간</span><span>{{ template.duration }}</span>
+          </div>
+          <div class="row">
+            <span class="label">난이도</span><span>{{ template.level }}</span>
+          </div>
         </div>
 
         <div class="notice-box">이 템플릿은 코치가 직접 제작하여 제공하는 운동 루틴입니다.</div>
@@ -110,19 +118,18 @@
       @close="showBuyModal = false"
       @confirm="purchaseTemplate"
     />
-
   </div>
 </template>
 
 <script>
-import { templateApi } from "@/api/axios";
-import HeaderBar from "@/components/HeaderBar.vue";
-import TemplateBuyModal from "./TemplateBuyModal.vue";
+import { templateApi } from '@/api/axios'
+import HeaderBar from '@/components/HeaderBar.vue'
+import TemplateBuyModal from './TemplateBuyModal.vue'
 
 export default {
-  name: "TemplateDetailView",
+  name: 'TemplateDetailView',
   components: { HeaderBar, TemplateBuyModal },
-  props: ["id"],
+  props: ['id'],
 
   data() {
     return {
@@ -134,100 +141,125 @@ export default {
 
       template: {
         id: null,
-        title: "",
-        creator: "",
-        sellerProfileImg: "",
-        awards: "IFBB 아마추어 1위 · 국내 챔피언십 TOP3 · 10년 경력 PT 전문가",
+        title: '',
+        creator: '',
+        sellerProfileImg: '',
+        awards: 'IFBB 아마추어 1위 · 국내 챔피언십 TOP3 · 10년 경력 PT 전문가',
         price: 0,
         likes: 0,
         salesCount: 0,
-        category: "",
-        structure: "",
-        duration: "",
-        level: "",
-        thumbnail: "",
-        description: "",
-        date: "2025-01-12"
+        category: '',
+        structure: '',
+        duration: '',
+        level: '',
+        thumbnail: '',
+        description: '',
+        date: '2025-01-12',
+        isMine: false
       },
 
-      starLevel: ""
-    };
+      starLevel: '',
+    }
   },
 
   async mounted() {
-    await this.fetchTemplateDetail(this.id);
+    await this.fetchTemplateDetail(this.id)
   },
 
   methods: {
     async fetchTemplateDetail(id) {
       try {
-        const res = await templateApi.getDetail(id);
-        const d = res.data.data;
+        const res = await templateApi.getDetail(id)
+        const d = res.data.data
 
-        // -----------------------------
-        // ⭐⭐⭐ DTO → 화면용 데이터 매핑
-        // -----------------------------
-        this.template.id = d.id;
-        this.template.title = d.name;
-        this.template.description = d.content;
-        this.template.thumbnail = this.BASE_URL + d.thumbnailImage;
-        this.template.creator = d.writerNickname;
-        this.template.sellerProfileImg = d.writerProfileImage || "";
+        console.log("🔥 응답받은 isMine:", d.isMine)
 
-        this.template.price = d.price;
-        this.template.salesCount = d.salesCount;
-        this.template.category = d.category || "";
-        this.template.duration = d.duration || "";
-        this.template.level = d.level || "";
+        // DTO → 화면용 데이터 매핑
+        this.template.id = d.id
+        this.template.title = d.name
+        this.template.description = d.content
+        this.template.thumbnail = this.BASE_URL + d.thumbnailImage
+        this.template.creator = d.writerNickname
 
-        this.template.date = d.createdAt?.split("T")[0] || this.template.date;
+        this.template.isMine = d.isMine
+        this.template.price = d.price
+        this.template.salesCount = d.salesCount
+        this.template.category = d.category || ''
+        this.template.duration = d.duration || ''
+        this.template.level = d.level || ''
 
-        // ❤️ 추천 정보 세팅
-        this.likeCount = d.recommendCount || 0;
-        this.liked = d.recommended || false;
+        this.template.date = d.createdAt?.split('T')[0] || this.template.date
+
+        // 추천 정보 세팅
+        this.likeCount = d.recommendCount || 0
+        this.liked = d.recommended || false
 
         // ⭐ 별점
-        this.starLevel = this.convertStars(this.template.salesCount);
+        this.starLevel = this.convertStars(this.template.salesCount)
       } catch (err) {
-        console.error("템플릿 조회 오류", err);
+        console.error('템플릿 조회 오류', err)
       }
     },
 
     convertStars(n) {
-      if (n < 50) return "⭐";
-      if (n < 150) return "⭐⭐";
-      if (n < 300) return "⭐⭐⭐";
-      if (n < 500) return "⭐⭐⭐⭐";
-      return "⭐⭐⭐⭐⭐";
+      if (n < 50) return '⭐'
+      if (n < 150) return '⭐⭐'
+      if (n < 300) return '⭐⭐⭐'
+      if (n < 500) return '⭐⭐⭐⭐'
+      return '⭐⭐⭐⭐⭐'
     },
 
     async toggleLike() {
-      const prevLiked = this.liked;
-      const prevCount = this.likeCount;
+      const prevLiked = this.liked
+      const prevCount = this.likeCount
 
       // Optimistic UI
-      this.liked = !this.liked;
-      this.likeCount += this.liked ? 1 : -1;
+      this.liked = !this.liked
+      this.likeCount += this.liked ? 1 : -1
 
       try {
         if (this.liked) {
-          await templateApi.recommend(this.template.id);
+          await templateApi.recommend(this.template.id)
         } else {
-          await templateApi.unRecommend(this.template.id);
+          await templateApi.unRecommend(this.template.id)
         }
       } catch (err) {
-        console.error("추천/취소 실패", err);
-        this.liked = prevLiked;
-        this.likeCount = prevCount;
+        console.error('추천/취소 실패', err)
+        this.liked = prevLiked
+        this.likeCount = prevCount
       }
     },
 
-    purchaseTemplate() {
-      alert("구매 API 연결 예정");
-      this.showBuyModal = false;
-    }
-  }
-};
+    async purchaseTemplate() {
+      try {
+        if (this.template.isMine) {
+          alert("본인이 만든 템플릿은 구매할 수 없습니다.");
+          this.showBuyModal = false;
+          return;
+        }
+
+        const id = this.template.id
+        await templateApi.purchase(id)
+
+        alert('구매가 완료되었습니다!')
+
+        this.showBuyModal = false
+
+        this.$router.push('/templates/storage')
+      } catch (err) {
+        console.error('구매 실패', err)
+
+        const msg =
+          err.response?.data?.message || err.customMessage ||
+          '구매 중 오류가 발생했습니다.'
+
+        alert(msg)
+
+        this.showBuyModal = false
+      }
+    },
+  },
+}
 </script>
 
 <style scoped>
@@ -335,8 +367,8 @@ export default {
 }
 
 .benefit-box {
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   padding: 18px 20px;
   border-radius: 10px;
 }
@@ -359,7 +391,7 @@ export default {
   background: #111;
   padding: 24px;
   border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.15);
+  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .sell-price {

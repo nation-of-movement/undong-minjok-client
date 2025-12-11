@@ -151,5 +151,29 @@ export const templateApi = {
     return api.get(`/templates/paged`, {
       params: { page, size, name, sort }
     });
-  }
+  },
+
+  // 템플릿 수정
+  updateTemplate(id, formData) {
+    return api.patch(`/templates/${id}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
+  // 템플릿 삭제
+  deleteTemplate(id) {
+    return api.delete(`/templates/${id}`);
+  },
+
+  //  내 템플릿 구매 내역
+  getMyPurchaseHistory() {
+    return api.get('/templates/purchases/me');
+  },
+
+  //  내 템플릿 판매 내역
+  getMySalesHistory() {
+    return api.get('/templates/sales/me');
+  },
+
+  // 페이지네이션 추가 필요
   };
