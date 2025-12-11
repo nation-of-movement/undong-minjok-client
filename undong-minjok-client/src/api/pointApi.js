@@ -18,3 +18,6 @@ export async function withdrawApi(payload) {
 
 
 // 포인트 상세 조회
+export async function fetchPointHistoryDetail(id) {
+  return api.get(`/points/detail/${id}`);
+}
