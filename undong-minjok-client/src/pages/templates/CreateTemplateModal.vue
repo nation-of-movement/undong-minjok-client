@@ -54,18 +54,26 @@
               <input v-model.number="ex.weight" class="input-sm" type="number" placeholder="무게(kg)" />
               <input v-model.number="ex.duration" class="input-sm" type="number" placeholder="시간(sec)" />
 
-              <select v-model="ex.part" class="input-sm">
-                <option>Chest</option>
-                <option>Back</option>
-                <option>Leg</option>
-                <option>Shoulder</option>
-                <option>Arm</option>
-                <option>Core</option>
+              <!-- 🔥 부위: /parts API 에서 불러온 목록 -->
+              <select
+                v-model="ex.partId"
+                class="input-sm"
+                @change="onPartChange(ex)"
+              >
+                <option :value="null">부위 선택</option>
+                <option v-for="p in parts" :key="p.id" :value="p.id">
+                  {{ p.name }}
+                </option>
               </select>
 
+              <!-- 🔥 장비: 선택한 부위(partId)에 따라 /equipments API 호출한 결과 -->
               <select v-model="ex.equipmentId" class="input-sm">
                 <option :value="null">장비 없음</option>
-                <option v-for="eq in equipmentList" :key="eq.id" :value="eq.id">
+                <option
+                  v-for="eq in (equipmentMap[ex.partId] || [])"
+                  :key="eq.id"
+                  :value="eq.id"
+                >
                   {{ eq.name }}
                 </option>
               </select>
@@ -74,6 +82,10 @@
             </div>
 
             <button class="add-btn" @click="addExercise">+ 운동 추가</button>
+          </div>
+
+
+          <button class="add-btn" @click="addExercise">+ 운동 추가</button>
           </div>
         </div>
 
@@ -121,16 +133,16 @@
       </div>
 
     </div>
-  </div>
+
 </template>
 
 <script>
-import api from "@/api/axios";
+import api from "@/api/axios";            // 기존 axios 인스턴스
+import partsApi from "@/api/partApi";    // /parts
+import equipmentApi from "@/api/equipmentApi"; // /equipments?part=...
 
 export default {
   name: "CreateTemplateModal",
-
-  props: { equipmentList: Array },
 
   data() {
     return {
@@ -146,10 +158,20 @@ export default {
 
       currentDay: 1,
 
+      // 7일 운동
       dayExercises: {
         1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [],
       },
+
+      // 🔥 부위 / 장비용 상태
+      parts: [],               // /parts 결과
+      equipmentMap: {},        // { [partId]: [equipments...] }
     };
+  },
+
+  async created() {
+    // 모달 열릴 때 부위 목록 먼저 한 번 가져오기
+    await this.fetchParts();
   },
 
   methods: {
@@ -157,37 +179,99 @@ export default {
       this.$emit("close");
     },
 
+    /* ================= 이미지 ================= */
+
     onThumbnailChange(e) {
       this.thumbnailFile = e.target.files[0];
-      this.previewThumbnail = URL.createObjectURL(this.thumbnailFile);
+      if (this.thumbnailFile) {
+        this.previewThumbnail = URL.createObjectURL(this.thumbnailFile);
+      }
     },
 
     onDetailImageChange(e) {
       this.detailImageFile = e.target.files[0];
-      this.previewDetail = URL.createObjectURL(this.detailImageFile);
+      if (this.detailImageFile) {
+        this.previewDetail = URL.createObjectURL(this.detailImageFile);
+      }
     },
 
+    /* ================= 부위 / 장비 API ================= */
+
+    async fetchParts() {
+      try {
+        const res = await partsApi.getParts();
+        // ApiResponse 형태면 res.data.data, 아니면 res.data
+        this.parts = res.data.data || res.data || [];
+      } catch (e) {
+        console.error("부위 목록 로드 실패", e);
+      }
+    },
+
+    async fetchEquipmentsByPart(partId) {
+      if (!partId) return;
+
+      // 이미 가져온 부위면 다시 호출하지 않음
+      if (this.equipmentMap[partId]) return;
+
+      try {
+        const res = await equipmentApi.getEquipmentsByPart(partId);
+        const list = res.data.data || res.data || [];
+        // 객체에 동적으로 키 추가 (Options API에서는 이렇게)
+        this.$set(this.equipmentMap, partId, list);
+      } catch (e) {
+        console.error("장비 목록 로드 실패", e);
+      }
+    },
+
+    onPartChange(ex) {
+      // 부위 선택 바뀌면 해당 부위의 장비 목록 로드 + 장비 선택 초기화
+      this.fetchEquipmentsByPart(ex.partId);
+      ex.equipmentId = null;
+    },
+
+    /* ================= 운동 행 추가/삭제 ================= */
+
     addExercise() {
-      this.dayExercises[this.currentDay].push({
-        day: this.currentDay,
+      const d = this.currentDay;
+      if (!this.dayExercises[d]) this.$set(this.dayExercises, d, []);
+
+      this.dayExercises[d].push({
+        day: d,
         name: "",
-        part: "",
+        partId: null,      // 🔥 부위 id
         reps: null,
         weight: null,
         duration: null,
-        orderIndex: this.dayExercises[this.currentDay].length + 1,
-        equipmentId: null,
+        orderIndex: this.dayExercises[d].length + 1,
+        equipmentId: null, // 🔥 장비 id
       });
     },
 
     removeExercise(index) {
-      this.dayExercises[this.currentDay].splice(index, 1);
+      const d = this.currentDay;
+      if (!this.dayExercises[d]) return;
+      this.dayExercises[d].splice(index, 1);
     },
 
+    /* ================= 등록 ================= */
+
     async submitTemplate() {
+      // dayExercises -> 평탄화하면서 orderIndex 다시 정리
       const exercises = [];
       for (let d = 1; d <= 7; d++) {
-        exercises.push(...this.dayExercises[d]);
+        const list = this.dayExercises[d] || [];
+        list.forEach((ex, idx) => {
+          exercises.push({
+            day: d,
+            name: ex.name,
+            partId: ex.partId,          // 🔥 백엔드 DTO에 맞춰 사용
+            reps: ex.reps,
+            weight: ex.weight,
+            duration: ex.duration,
+            orderIndex: idx + 1,
+            equipmentId: ex.equipmentId,
+          });
+        });
       }
 
       const dto = {
@@ -195,7 +279,7 @@ export default {
         content: this.content,
         price: this.price,
         status: this.price > 0 ? "PAID" : "FREE",
-        exercises: exercises,
+        exercises,
       };
 
       const form = new FormData();
@@ -218,6 +302,7 @@ export default {
   },
 };
 </script>
+
 
 <style scoped>
 .modal-overlay {
