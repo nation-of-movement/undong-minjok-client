@@ -6,8 +6,8 @@
       <input
         type="number"
         class="input-large"
-        min="0"
-        v-model.number="amount.value"
+        min="100"
+        v-model.number="amount"
         placeholder="충전할 금액을 입력해주세요."
       />
       <div class="btn-card">
@@ -20,155 +20,150 @@
 
     <div class="wrapper">
       <div class="box_section">
-        <!-- 결제 UI -->
-        <div id="payment-method"></div>
-
-        <!-- 이용약관 UI -->
-        <div id="agreement"></div>
-
-        <!-- 결제하기 버튼 -->
         <div class="div-btn">
-          <button :disabled="!ready" @click="checkAmount" class="button payments-btn" style="margin-top: 30px">
+          <button
+            :disabled="!ready"
+            @click="checkAmount"
+            class="button payments-btn"
+            style="margin-top: 30px"
+          >
             결제하기
           </button>
+          <span @click="closePayment">취소</span>
         </div>
       </div>
-
-      <div
-        class="box_section"
-        style="padding: 40px 30px 50px 30px; margin-top: 30px; margin-bottom: 50px"
-      ></div>
     </div>
   </div>
-
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, watch } from 'vue'
-import { loadTossPayments, ANONYMOUS } from '@tosspayments/tosspayments-sdk'
-import { paymentsPrepareApi } from '@/api/paymentsApi.js'
+import { ref, onMounted, computed } from 'vue'
+import { paymentsPrepareApi } from '../../api/paymentsApi.js'
+import { useRouter } from 'vue-router'
+import HeaderBar from '@/components/HeaderBar.vue'
 
-// 랜덤 문자열 생성
+// Toss 클라이언트 키
+const clientKey = 'test_ck_LlDJaYngroa7b9vy92zm3ezGdRpX'
+const router = useRouter();
+// 상태 변수
+const amount = ref(0)
+const paymentReady = ref(false)
+const tossPaymentsInstance = ref(null)
+
+const closePayment = () => {
+  router.push('/profile');
+}
+
+// Toss SDK 로더 (수정된 완전 버전)
+const loadTossPaymentsSDK = (clientKey) => {
+  return new Promise((resolve, reject) => {
+    // 이미 로드되어 있다면 바로 초기화
+    if (window.TossPayments) {
+      try {
+        return resolve(window.TossPayments(clientKey))
+      } catch (e) {
+        return reject(e)
+      }
+    }
+
+    // script 로딩
+    const script = document.createElement('script')
+    script.src = 'https://js.tosspayments.com/v1/payment'
+    script.async = true
+
+    script.onload = () => {
+      if (window.TossPayments) {
+        try {
+          resolve(window.TossPayments(clientKey))
+        } catch (e) {
+          reject(new Error('TossPayments 초기화 실패: ' + e.message))
+        }
+      } else {
+        reject(new Error('TossPayments SDK 로드됐지만 전역객체 없음'))
+      }
+    }
+
+    script.onerror = () => reject(new Error('TossPayments SDK 스크립트 로드 실패'))
+    document.head.appendChild(script)
+  })
+}
+
+// 주문번호 생성
 function generateRandomString() {
   return window.btoa(Math.random().toString()).slice(0, 20)
 }
 
-// TODO: clientKey는 개발자센터 결제위젯 연동 키로 교체
-const clientKey = 'test_gck_docs_Ovk5rk1EwkEbP0W43n07xlzm'
-const customerKey = generateRandomString()
+// 금액 버튼
+const addAmount = (price) => {
+  if (price <= 0) amount.value = 0
+  else amount.value += price
+}
 
-// 상태 정의
-const ready = ref(false)
-const widgets = ref(null)
-const amount = reactive({
-  currency: 'KRW',
-  value: 0,
+// SDK 로드
+onMounted(async () => {
+  try {
+    tossPaymentsInstance.value = await loadTossPaymentsSDK(clientKey)
+    paymentReady.value = true
+    console.log('TossPayments SDK 로드 완료')
+  } catch (err) {
+    console.error(err)
+    alert('결제 모듈 로딩에 실패했어요! 다시 시도해주세요.')
+  }
 })
 
-//
-const addAmount = (price) => {
-  if (price <= 0) {
-    amount.value = 0
-    return
-  }
+// 버튼 활성화 조건
+const ready = computed(() => {
+  return amount.value >= 100 && paymentReady.value
+})
 
-  amount.value += price;
-}
-
-// TossPayments 위젯 가져오기
-async function fetchPaymentWidgets() {
-  try {
-    const tossPayments = await loadTossPayments(clientKey)
-
-    // 회원 결제
-    widgets.value = tossPayments.widgets({ customerKey })
-  } catch (error) {
-    console.error('Error fetching payment widget:', error)
-  }
-}
-
-// 결제 위젯 렌더링
-async function renderPaymentWidgets() {
-  if (!widgets.value) return
-
-  await Promise.all([
-    widgets.value.renderPaymentMethods({
-      selector: '#payment-method',
-      variantKey: 'DEFAULT',
-    }),
-    widgets.value.renderAgreement({
-      selector: '#agreement',
-      variantKey: 'AGREEMENT',
-    }),
-  ])
-
-  ready.value = true
-}
-
-// 결제 요청 전 금액확인
+// 결제 버튼 클릭 시
 function checkAmount() {
-  if (amount.value <= 0) {
-    alert('금액을 다시 확인해주세요.')
+  if (amount.value < 100) {
+    alert("100원 이상 입력해주세요.")
     return
   }
-
-  // 결제요청
   requestPayment()
-}
-
-async function setAmount() {
-  await widgets.value.setAmount({
-    currency: 'KRW',
-    value: amount.value,
-  })
 }
 
 // 결제 요청
 async function requestPayment() {
-  if (!widgets.value || !ready.value) return
+  if (!tossPaymentsInstance.value) {
+   //  alert("SDK 로드 대기 중입니다.")
+    return
+  }
 
-  let orderId = generateRandomString();
-
+  const orderId = generateRandomString();
 
   let payload = {
-    orderId : orderId
-    , amount : amount.value
+    orderId : orderId,
+    amount : amount.value,
+    paymentId : paymentReady.value,
   }
 
   try {
-    // orderId, amount 서버 임시로 저장
+
+    // 레디스 저장
     await paymentsPrepareApi(payload);
 
-    // 결제 요청
-    await widgets.value.requestPayment({
-      orderId: orderId, // 주문 고유 ID
-      orderName: `포인트 충전 ${amount.value}원`, // 결제명
-      successUrl: window.location.origin + '/success', // 결제 성공 후 이동할 페이지
-      failUrl: window.location.origin + '/fail', // 결제 실패 후 이동할 페이지
-      customerEmail: 'lala19873@naver.com',
+    // 토스 결제
+    await tossPaymentsInstance.value.requestPayment('CARD', {
+      amount: amount.value,
+      orderId,
+      orderName: `포인트 충전 ${amount.value}원`,
       customerName: '김토스',
-      customerMobilePhone: '01012345678', // 필요 시 추가
+      customerEmail: 'lala19873@naver.com',
+      successUrl: window.location.origin + '/success',
+      failUrl: window.location.origin + '/fail',
     })
-  } catch (error) {
-    console.error('결제 실패:', error)
-    alert('결제에 실패했습니다. 다시 시도해주세요.')
+  } catch (err) {
+    console.error('결제 요청 실패:', err)
+    await router.push('/');
+
   }
 }
-
-watch(
-  () => amount.value,
-  async () => {
-    await setAmount();
-  }
-)
-
-// 마운트 시 위젯 초기화
-onMounted(async () => {
-  await fetchPaymentWidgets()
-  await setAmount()
-  await renderPaymentWidgets()
-})
 </script>
+
+
 <style scoped>
 body,
 html {
@@ -248,9 +243,14 @@ input[type='number'] {
 
 .div-btn {
   display: flex;
-  justify-content: center; /* 가로 중앙 */
+  flex-direction: column; /* ← 세로 정렬 핵심 */
+  justify-content: center; /* 세로 기준 중앙 정렬 */
+  align-items: center;     /* 가로 기준 중앙 정렬 */
   width: 100%;
 }
 
-
+.div-btn span {
+  padding-top: 10px;
+  font-size: 12px;
+}
 </style>

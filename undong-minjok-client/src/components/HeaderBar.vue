@@ -20,7 +20,6 @@ const auth = useAuthStore();
       <template v-else>
         <RouterLink to="/login" class="btn-red">로그인</RouterLink>
       </template>
-      <RouterLink to="/payments">결제</RouterLink>
     </nav>
   </header>
 </template>
