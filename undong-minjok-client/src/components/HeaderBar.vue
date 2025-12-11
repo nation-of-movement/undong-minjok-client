@@ -8,9 +8,10 @@ const auth = useAuthStore();
     <div class="logo">운동의 민족</div>
 
     <nav class="nav">
-      <RouterLink to="/">홈</RouterLink>
-      <RouterLink to="/community">커뮤니티</RouterLink>
-      <RouterLink to="/challenge">챌린지</RouterLink>
+
+      <RouterLink to="/">기록하러 가기</RouterLink>
+      <RouterLink to="/payments">충전하기</RouterLink>
+
       <template v-if="auth.user">
         <RouterLink to="/profile">내 정보</RouterLink>
         <button @click="auth.logout" class="btn-red">로그아웃</button>
