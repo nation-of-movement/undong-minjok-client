@@ -56,7 +56,7 @@
 
               <!-- 🔥 부위 -->
               <select
-                v-model="ex.partId"
+                v-model="ex.part"
                 class="input-sm"
                 @change="onPartChange(ex)"
               >
@@ -70,7 +70,7 @@
               <select v-model="ex.equipmentId" class="input-sm">
                 <option :value="null">장비 없음</option>
                 <option
-                  v-for="eq in (equipmentMap[ex.partId] || [])"
+                  v-for="eq in (equipmentMap[ex.part] || [])"
                   :key="eq.id"
                   :value="eq.id"
                 >
@@ -205,17 +205,17 @@ export default {
       }
     },
 
-    async fetchEquipmentsByPart(partId) {
-      if (!partId) return;
+    async fetchEquipmentsByPart(part) {
+      if (!part) return;
 
       // 이미 가져온 부위면 다시 호출하지 않음
-      if (this.equipmentMap[partId]) return;
+      if (this.equipmentMap[part]) return;
 
       try {
-        const res = await equipmentApi.getEquipmentsByPart(partId);
+        const res = await equipmentApi.getEquipmentsByPart(part);
         const list = res.data.data || res.data || [];
         // 객체에 동적으로 키 추가 (Options API에서는 이렇게)
-        this.$set(this.equipmentMap, partId, list);
+        this.$set(this.equipmentMap, part, list);
       } catch (e) {
         console.error("장비 목록 로드 실패", e);
       }
@@ -223,7 +223,7 @@ export default {
 
     onPartChange(ex) {
       // 부위 선택 바뀌면 해당 부위의 장비 목록 로드 + 장비 선택 초기화
-      this.fetchEquipmentsByPart(ex.partId);
+      this.fetchEquipmentsByPart(ex.part);
       ex.equipmentId = null;
     },
 
@@ -236,7 +236,7 @@ export default {
       this.dayExercises[d].push({
         day: d,
         name: "",
-        partId: null,      // 🔥 부위 id
+        part: null,      // 🔥 부위 id
         reps: null,
         weight: null,
         duration: null,
@@ -262,7 +262,7 @@ export default {
           exercises.push({
             day: d,
             name: ex.name,
-            partId: ex.partId,          // 🔥 백엔드 DTO에 맞춰 사용
+            part: ex.part,          // 🔥 백엔드 DTO에 맞춰 사용
             reps: ex.reps,
             weight: ex.weight,
             duration: ex.duration,
