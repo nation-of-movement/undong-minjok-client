@@ -109,13 +109,6 @@ onMounted(async () => {
   width: 400px;
 }
 
-.btn-white {
-  padding: 8px 16px;
-  background: #ffffff;
-  border-radius: 6px;
-  font-weight: 600;
-}
-
 button {
   margin-top: 40px;
   height: 40px;

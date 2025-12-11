@@ -40,6 +40,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { paymentsPrepareApi } from '../../api/paymentsApi.js'
 import { useRouter } from 'vue-router'
+import HeaderBar from '@/components/HeaderBar.vue'
 
 // Toss 클라이언트 키
 const clientKey = 'test_ck_LlDJaYngroa7b9vy92zm3ezGdRpX'
