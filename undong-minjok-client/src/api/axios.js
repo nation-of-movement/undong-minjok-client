@@ -105,9 +105,10 @@ api.interceptors.response.use(
 
 export default api
 
-//  템플릿 API 전용 함수 (하단에 추가)
+//  템플릿 API 전용 함수
 export const templateApi = {
 
+  // 전체 조회 (정렬/검색 없음)
   getAll() {
     return api.get(`/templates/all`);
   },
@@ -132,22 +133,7 @@ export const templateApi = {
     return api.post(`/templates/${id}/purchase`);
   },
 
-  // 검색
-  search(name) {
-    return api.get(`/templates/search`, {
-      params: { name }
-    });
-  },
-
-  // 정렬 조회 (추천순/판매순/최신순)
-  getSorted(sort = "LATEST") {
-    return api.get(`/templates/sorted`, {
-      params: { sort }
-    });
-  },
-
-  // 페이지네이션
-  getPaged(page = 1, size = 10, name = "", sort = "LATEST") {
+  getPage({ page = 0, size = 10, name = "", sort = "LATEST" }) {
     return api.get(`/templates/paged`, {
       params: { page, size, name, sort }
     });
@@ -156,7 +142,7 @@ export const templateApi = {
   // 템플릿 수정
   updateTemplate(id, formData) {
     return api.patch(`/templates/${id}`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+      headers: { "Content-Type": "multipart/form-data" }
     });
   },
 
@@ -167,13 +153,11 @@ export const templateApi = {
 
   //  내 템플릿 구매 내역
   getMyPurchaseHistory() {
-    return api.get('/templates/purchases/me');
+    return api.get(`/templates/purchases/me`);
   },
 
   //  내 템플릿 판매 내역
   getMySalesHistory() {
-    return api.get('/templates/sales/me');
-  },
-
-  // 페이지네이션 추가 필요
-  };
+    return api.get(`/templates/sales/me`);
+  }
+};
