@@ -11,7 +11,10 @@ import {
   deleteUserApi,
   resetPasswordApi
 } from '@/api/userApi'
-import PointHistoryView from '@/pages/point/PointHistoryView.vue'
+
+import { templateApi } from '@/api/axios.js'
+import equipmentApi from '@/api/equipmentApi.js'
+import partsApi from '@/api/partApi.js'
 
 const auth = useAuthStore()
 const IMAGE_BASE_URL = import.meta.env.VITE_IMG_BASE_URL
@@ -77,7 +80,6 @@ onMounted(() => {
  * ================================ */
 const savingNickname = ref(false)
 const handleSaveNickname = async () => {
-
   const newNick = nickname.value.trim()
 
   if (newNick === userInfo.value.nickname) {
@@ -261,7 +263,290 @@ const submitResetPassword = async () => {
   }
 };
 
+/* ================================
+ *  구매내역 및 판매내역
+ * ================================ */
+const purchaseList = ref([])
+const salesList = ref([])
 
+const loadingPurchases = ref(false)
+const loadingSales = ref(false)
+
+// 구매 내역 가져오기
+const fetchPurchases = async () => {
+  if (loadingPurchases.value) return
+  loadingPurchases.value = true
+  try {
+    const res = await templateApi.getMyPurchaseHistory()
+    // 백엔드: ApiResponse<List<TemplatePurchaseHistoryDTO>>
+    purchaseList.value = res.data.data || []
+  } catch (e) {
+    console.error('구매 내역 조회 실패', e)
+  } finally {
+    loadingPurchases.value = false
+  }
+}
+
+// 판매 내역 가져오기
+const fetchSales = async () => {
+  if (loadingSales.value) return
+  loadingSales.value = true
+  try {
+    const res = await templateApi.getMySalesHistory()
+    // 백엔드: ApiResponse<List<TemplateSalesHistoryDTO>>
+    salesList.value = res.data.data || []
+  } catch (e) {
+    console.error('판매 내역 조회 실패', e)
+  } finally {
+    loadingSales.value = false
+  }
+}
+
+/* ================================
+ *  템플릿 수정 / 삭제 (판매 내역 전용)
+ * ================================ */
+
+// 수정 모달 on/off + 어떤 템플릿인지
+const showEditTemplateModal = ref(false)
+const editingTemplateId = ref(null)
+
+// 부위 / 장비 데이터
+const parts = ref([])                     // /parts 에서 받아오는 목록
+const equipmentsMap = ref({})             // { [partCode]: [{id, name, ...}], ... }
+
+// 부위 목록 로드
+const loadParts = async () => {
+  try {
+    const res = await partsApi.getParts()
+    parts.value = res.data.data || []
+  } catch (e) {
+    console.error('부위 목록 로드 실패', e)
+  }
+}
+
+// 특정 부위의 장비 목록 로드 (캐시)
+const loadEquipmentsForPart = async (partCode) => {
+  if (!partCode) return
+  if (equipmentsMap.value[partCode]) return  // 이미 있으면 재요청 X
+
+  try {
+    const res = await equipmentApi.getEquipmentsByPart(partCode)
+    equipmentsMap.value = {
+      ...equipmentsMap.value,
+      [partCode]: res.data.data || [],
+    }
+  } catch (e) {
+    console.error('장비 목록 로드 실패', e)
+  }
+}
+
+const openEditTemplateModal = async (templateId) => {
+  editingTemplateId.value = templateId
+
+  // 부위 먼저 로드
+  await loadParts()
+  // 템플릿 상세 로드해서 상태 채우기
+  await prepareEditModalData(templateId)
+
+  // 불러온 운동들 안에 들어있는 부위들에 대한 장비도 미리 로드
+  const partSet = new Set()
+  Object.values(editDayExercises.value).forEach((list) => {
+    list.forEach((ex) => {
+      if (ex.part) partSet.add(ex.part)
+    })
+  })
+  for (const p of partSet) {
+    await loadEquipmentsForPart(p)
+  }
+
+  showEditTemplateModal.value = true
+}
+
+// ================= 템플릿 수정 모달 상태 =================
+const editName = ref('')
+const editContent = ref('')
+const editPrice = ref(0)
+
+const editThumbnailFile = ref(null)
+const editDetailImageFile = ref(null)
+const editPreviewThumbnail = ref(null)
+const editPreviewDetail = ref(null)
+
+const editCurrentDay = ref(1)
+
+// 7일 운동 배열
+const createEmptyDayMap = () => ({
+  1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [],
+})
+
+const editDayExercises = ref(createEmptyDayMap())
+
+// 템플릿 상세 불러와서 모달에 채우기
+const prepareEditModalData = async (templateId) => {
+  // 기본값 초기화
+  editName.value = ''
+  editContent.value = ''
+  editPrice.value = 0
+  editThumbnailFile.value = null
+  editDetailImageFile.value = null
+  editPreviewThumbnail.value = null
+  editPreviewDetail.value = null
+  editCurrentDay.value = 1
+  editDayExercises.value = createEmptyDayMap()
+
+  try {
+    const res = await templateApi.getDetail(templateId)
+    const t = res.data.data
+
+    editName.value = t.name
+    editContent.value = t.content
+    editPrice.value = t.price
+
+    if (t.thumbnailImage) {
+      editPreviewThumbnail.value = IMAGE_BASE_URL + t.thumbnailImage
+    }
+    if (t.templateImage) {
+      editPreviewDetail.value = IMAGE_BASE_URL + t.templateImage
+    }
+
+    if (t.days && Array.isArray(t.days)) {
+      const dayMap = createEmptyDayMap()
+
+      t.days.forEach((dayDto) => {
+        const d = dayDto.day
+        if (!dayMap[d]) dayMap[d] = []
+        ;(dayDto.exercises || []).forEach((ex, idx) => {
+          dayMap[d].push({
+            day: d,
+            name: ex.name || '',
+            part: ex.part || null,              // 부위 코드/이름
+            reps: ex.reps ?? null,
+            weight: ex.weight ?? null,
+            duration: ex.duration ?? null,
+            orderIndex: ex.orderIndex ?? idx + 1,
+            equipmentId: ex.equipmentId ?? null,
+          })
+        })
+      })
+
+      editDayExercises.value = dayMap
+    }
+  } catch (e) {
+    console.error('템플릿 상세 조회 실패', e)
+  }
+}
+
+const closeEditTemplateModal = () => {
+  showEditTemplateModal.value = false
+}
+
+// 운동 추가/삭제
+const addEditExercise = () => {
+  const d = editCurrentDay.value
+  if (!editDayExercises.value[d]) editDayExercises.value[d] = []
+  editDayExercises.value[d].push({
+    day: d,
+    name: '',
+    part: null,
+    reps: null,
+    weight: null,
+    duration: null,
+    orderIndex: editDayExercises.value[d].length + 1,
+    equipmentId: null,
+  })
+}
+
+const removeEditExercise = (index) => {
+  const d = editCurrentDay.value
+  if (!editDayExercises.value[d]) return
+  editDayExercises.value[d].splice(index, 1)
+}
+
+// 부위 선택 변경시 장비 로드
+const handleEditExercisePartChange = async (ex) => {
+  if (!ex.part) {
+    ex.equipmentId = null
+    return
+  }
+  await loadEquipmentsForPart(ex.part)
+  ex.equipmentId = null  // 다른 부위 선택하면 장비 초기화
+}
+
+// 파일 변경
+const onEditThumbnailChange = (e) => {
+  const file = e.target.files[0]
+  if (!file) return
+  editThumbnailFile.value = file
+  editPreviewThumbnail.value = URL.createObjectURL(file)
+}
+
+const onEditDetailImageChange = (e) => {
+  const file = e.target.files[0]
+  if (!file) return
+  editDetailImageFile.value = file
+  editPreviewDetail.value = URL.createObjectURL(file)
+}
+
+// 실제 수정 요청
+const submitEditTemplate = async () => {
+  if (!editingTemplateId.value) return
+
+  const exercises = []
+  for (let d = 1; d <= 7; d++) {
+    const list = editDayExercises.value[d] || []
+    list.forEach((ex, idx) => {
+      exercises.push({
+        ...ex,
+        day: d,
+        orderIndex: idx + 1,
+      })
+    })
+  }
+
+  const dto = {
+    name: editName.value,
+    content: editContent.value,
+    price: editPrice.value,
+    status: editPrice.value > 0 ? 'PAID' : 'FREE',
+    exercises,
+  }
+
+  const form = new FormData()
+  form.append('data', JSON.stringify(dto))
+  if (editThumbnailFile.value) form.append('thumbnail', editThumbnailFile.value)
+  if (editDetailImageFile.value) form.append('detailImage', editDetailImageFile.value)
+
+  try {
+    await templateApi.updateTemplate(editingTemplateId.value, form)
+    alert('템플릿이 수정되었습니다.')
+    showEditTemplateModal.value = false
+    fetchSales()
+  } catch (e) {
+    console.error('템플릿 수정 실패', e)
+    alert('템플릿 수정 중 오류가 발생했습니다.')
+  }
+}
+
+// 삭제 (간단 confirm)
+const openDeleteTemplateModal = async (templateId) => {
+  if (!confirm('정말 삭제하시겠습니까?')) return
+
+  try {
+    await templateApi.deleteTemplate(templateId)
+    alert('템플릿이 삭제되었습니다.')
+    fetchSales()
+  } catch (e) {
+    console.error('템플릿 삭제 실패', e)
+    alert('삭제 중 오류가 발생했습니다.')
+  }
+}
+
+
+// 페이지 들어오면 둘 다 한 번씩 조회
+onMounted(() => {
+  fetchPurchases()
+  fetchSales()
+})
 </script>
 
 <template>
@@ -293,10 +578,7 @@ const submitResetPassword = async () => {
             <!-- 프로필 이미지 -->
             <div class="profile-image-wrap">
               <div class="profile-image">
-                <img
-                  v-if="profileImageUrl"
-                  :src="profileImageUrl"
-                />
+                <img v-if="profileImageUrl" :src="profileImageUrl" />
                 <div v-else class="profile-placeholder">
                   {{ userInfo.nickname?.[0] || 'U' }}
                 </div>
@@ -351,9 +633,7 @@ const submitResetPassword = async () => {
 
             <div class="field-footer-between">
               <!-- 왼쪽: 탈퇴 버튼 -->
-              <button class="delete-account-btn" @click="showDeleteModal = true">
-                회원 탈퇴
-              </button>
+              <button class="delete-account-btn" @click="showDeleteModal = true">회원 탈퇴</button>
 
               <!-- 오른쪽: 수정/저장/취소 -->
               <div v-if="editingBio" class="btn-group">
@@ -366,23 +646,79 @@ const submitResetPassword = async () => {
               </div>
             </div>
           </div>
-
         </div>
 
         <!-- 다른 탭 -->
         <div v-else-if="activeMenu === 'points'" class="card">
           <h3 class="card-title">포인트 이력</h3>
-          <PointHistoryView />
+          <p class="empty-text">준비중입니다.</p>
         </div>
 
+        <!-- ================= 구매 내역 ================= -->
         <div v-else-if="activeMenu === 'purchases'" class="card">
-          <h3 class="card-title">구매 내역</h3>
-          <p class="empty-text">준비중입니다.</p>
+          <div class="history-header">
+            <h3 class="card-title">구매 내역</h3>
+            <span class="history-count">총 {{ purchaseList.length }}개</span>
+          </div>
+
+          <div v-if="loadingPurchases" class="empty-text">불러오는 중...</div>
+          <div v-else-if="!purchaseList.length" class="empty-text">구매 내역이 없습니다.</div>
+          <div v-else class="history-table history-table--purchase">
+            <!-- 헤더 행 -->
+            <div class="history-row history-row--head">
+              <div class="col col-name">NAME</div>
+              <div class="col col-desc">DESCRIPTION</div>
+              <div class="col col-price">PRICE</div>
+              <div class="col col-date">DATE</div>
+            </div>
+
+            <!-- 데이터 행 -->
+            <div v-for="item in purchaseList" :key="item.templateId" class="history-row">
+              <div class="col col-name">{{ item.templateName }}</div>
+              <div class="col col-desc">구매한 운동 템플릿입니다.</div>
+              <div class="col col-price">{{ item.price }} P</div>
+              <div class="col col-date">{{ new Date(item.purchasedAt).toLocaleDateString('ko-KR') }}</div>
+            </div>
+          </div>
         </div>
 
+        <!-- ================= 판매 내역 ================= -->
         <div v-else-if="activeMenu === 'sales'" class="card">
-          <h3 class="card-title">판매 내역</h3>
-          <p class="empty-text">준비중입니다.</p>
+          <div class="history-header">
+            <h3 class="card-title">판매 내역</h3>
+            <span class="history-count">총 {{ salesList.length }}개</span>
+          </div>
+
+          <div v-if="loadingSales" class="empty-text">불러오는 중...</div>
+
+          <div v-else-if="!salesList.length" class="empty-text">판매 내역이 없습니다.</div>
+
+          <div v-else class="history-table history-table--sales">
+            <!-- 헤더 행 (6컬럼: NAME / DESC / SALES / PRICE / DATE / 버튼) -->
+            <div class="history-row history-row--head">
+              <div class="col col-name">NAME</div>
+              <div class="col col-desc">DESCRIPTION</div>
+              <div class="col col-sales">SALES</div>
+              <div class="col col-price">PRICE</div>
+              <div class="col col-date">DATE</div>
+              <div class="col col-actions"></div>
+            </div>
+
+            <!-- 데이터 행 -->
+            <div v-for="item in salesList" :key="item.templateId" class="history-row">
+              <div class="col col-name">{{ item.templateName }}</div>
+              <div class="col col-desc">내가 판매한 운동 템플릿입니다.</div>
+              <div class="col col-sales">{{ item.salesCount }} 개</div>
+              <div class="col col-price">{{ item.price }} P</div>
+              <div class="col col-date">{{ new Date(item.createdAt).toLocaleDateString('ko-KR') }}</div>
+
+              <!-- 🔥 수정 / 삭제 버튼 -->
+              <div class="col col-actions">
+                <button class="list-btn list-btn--edit" @click="openEditTemplateModal(item.templateId)">수정</button>
+                <button class="list-btn list-btn--delete" @click="openDeleteTemplateModal(item.templateId)">삭제</button>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
     </div>
@@ -406,7 +742,6 @@ const submitResetPassword = async () => {
   <!-- ================= 비밀번호 변경 모달 ================= -->
   <div class="modal-backdrop" v-if="showPasswordModal">
     <div class="modal">
-
       <h3>비밀번호 변경</h3>
 
       <!-- 이메일 -->
@@ -424,7 +759,6 @@ const submitResetPassword = async () => {
           <span v-else-if="passwordResetStore.codeSent && !passwordResetStore.emailVerified">재요청</span>
           <span v-else>인증 요청</span>
         </button>
-
       </div>
 
       <!-- 인증번호 입력 + 확인 -->
@@ -476,7 +810,170 @@ const submitResetPassword = async () => {
         <button class="btn-outline" @click="showPasswordModal = false">취소</button>
         <button class="btn-red" @click="submitResetPassword">변경</button>
       </div>
+    </div>
+  </div>
 
+  <!-- ================= 템플릿 수정 모달 (등록 모달 스타일) ================= -->
+  <div
+    class="modal-overlay edit-template-modal"
+    v-if="showEditTemplateModal"
+    @click.self="closeEditTemplateModal"
+  >
+    <div class="modal-container">
+      <h2 class="modal-title">템플릿 수정하기</h2>
+
+      <div class="modal-body-grid">
+        <!-- LEFT AREA: 기본정보 + Day + 운동 목록 -->
+        <div class="left-panel">
+          <div class="section">
+            <label>템플릿 제목</label>
+            <input
+              v-model="editName"
+              class="input"
+              type="text"
+              placeholder="예: 7일 분할 루틴"
+            />
+
+            <label>설명</label>
+            <textarea
+              v-model="editContent"
+              class="textarea"
+              placeholder="템플릿 설명을 입력하세요"
+            ></textarea>
+
+            <label>가격</label>
+            <input
+              v-model.number="editPrice"
+              class="input"
+              type="number"
+              min="0"
+              placeholder="가격을 입력하세요 (숫자만)"
+            />
+          </div>
+
+          <!-- Day 탭 -->
+          <div class="day-tabs">
+            <button
+              v-for="d in 7"
+              :key="d"
+              :class="['day-tab', { active: editCurrentDay === d }]"
+              @click="editCurrentDay = d"
+            >
+              Day {{ d }}
+            </button>
+          </div>
+
+          <!-- 운동 입력 UI -->
+          <div class="exercise-section">
+            <h3>Day {{ editCurrentDay }} 운동 목록</h3>
+
+            <div
+              v-for="(ex, idx) in editDayExercises[editCurrentDay]"
+              :key="idx"
+              class="exercise-item"
+            >
+              <input v-model="ex.name" class="input-sm" placeholder="운동명" />
+              <input
+                v-model.number="ex.reps"
+                class="input-sm"
+                type="number"
+                placeholder="횟수"
+              />
+              <input
+                v-model.number="ex.weight"
+                class="input-sm"
+                type="number"
+                placeholder="무게(kg)"
+              />
+              <input
+                v-model.number="ex.duration"
+                class="input-sm"
+                type="number"
+                placeholder="시간(sec)"
+              />
+
+              <!-- 부위 선택 -->
+              <select
+                v-model="ex.part"
+                class="input-sm"
+                @change="handleEditExercisePartChange(ex)"
+              >
+                <option :value="null">부위 선택</option>
+                <option
+                  v-for="part in parts"
+                  :key="part.id"
+                  :value="part.code"
+                >
+                  {{ part.name }}
+                </option>
+              </select>
+
+              <!-- 장비 선택 -->
+              <select v-model="ex.equipmentId" class="input-sm">
+                <option :value="null">장비 없음</option>
+                <option
+                  v-for="eq in (equipmentsMap[ex.part] || [])"
+                  :key="eq.id"
+                  :value="eq.id"
+                >
+                  {{ eq.name }}
+                </option>
+              </select>
+
+              <button class="delete-btn" @click="removeEditExercise(idx)">
+                삭제
+              </button>
+            </div>
+
+            <button class="add-btn" @click="addEditExercise">
+              + 운동 추가
+            </button>
+          </div>
+        </div>
+
+        <!-- RIGHT AREA: 이미지 -->
+        <div class="right-panel">
+          <h3 class="right-title">이미지 수정</h3>
+
+          <div class="image-box">
+            <label>썸네일 이미지</label>
+            <input type="file" @change="onEditThumbnailChange" />
+
+            <div class="image-preview-frame">
+              <img
+                v-if="editPreviewThumbnail"
+                :src="editPreviewThumbnail"
+                class="image-preview"
+              />
+              <div v-else class="image-preview empty">
+                현재 이미지를 유지합니다.
+              </div>
+            </div>
+          </div>
+
+          <div class="image-box">
+            <label>상세 이미지</label>
+            <input type="file" @change="onEditDetailImageChange" />
+
+            <div class="image-preview-frame">
+              <img
+                v-if="editPreviewDetail"
+                :src="editPreviewDetail"
+                class="image-preview"
+              />
+              <div v-else class="image-preview empty">
+                현재 이미지를 유지합니다.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 버튼 -->
+      <div class="bottom-buttons">
+        <button class="submit-btn" @click="submitEditTemplate">수정하기</button>
+        <button class="cancel-btn" @click="closeEditTemplateModal">닫기</button>
+      </div>
     </div>
   </div>
 
@@ -657,8 +1154,8 @@ const submitResetPassword = async () => {
 
 /* input 설정 */
 .input {
-  flex: 1;        /* 남은 공간 모두 차지 */
-  min-width: 0;   /* 버튼 때문에 튀어나가는 문제 해결 */
+  flex: 1; /* 남은 공간 모두 차지 */
+  min-width: 0; /* 버튼 때문에 튀어나가는 문제 해결 */
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.12);
@@ -773,7 +1270,6 @@ const submitResetPassword = async () => {
   width: auto !important;
 }
 
-
 .delete-account-btn:hover {
   background: rgba(255, 80, 80, 0.1);
 }
@@ -818,6 +1314,341 @@ const submitResetPassword = async () => {
   gap: 10px;
 }
 
+/* ================= 리스트 공통 UI (구매/판매 표) ================= */
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.history-count {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+/* 테이블 영역 공통 */
+.history-table {
+  width: 100%;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.5);
+}
+
+/* 구매 내역 (4컬럼) */
+.history-table--purchase .history-row,
+.history-table--purchase .history-row--head {
+  display: grid;
+  grid-template-columns: 2fr 3fr 1.8fr 1.4fr;
+}
+
+/* 판매 내역 (6컬럼: NAME / DESC / SALES / PRICE / DATE / ACTIONS) */
+.history-table--sales .history-row,
+.history-table--sales .history-row--head {
+  display: grid;
+  grid-template-columns: 2fr 3fr 1.1fr 2fr 1.4fr 1.6fr;
+}
+
+
+
+.history-row {
+  padding: 10px 14px;
+  font-size: 13px;
+  align-items: center;
+}
+
+.history-row--head {
+  background: #FF0033FF;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.history-row--head .col {
+  color: #fff;
+}
+
+.history-row:nth-child(odd):not(.history-row--head) {
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.history-row:nth-child(even):not(.history-row--head) {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.col {
+  padding: 0 6px;
+}
+
+
+/* 오른쪽 액션 버튼 영역 */
+.col-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 리스트용 공통 버튼 (작게) */
+.list-btn {
+  padding: 6px 14px;
+  border-radius: 999px;       /* 동그랗게 */
+  font-size: 12px;
+  cursor: pointer;
+  border-width: 1px;
+  border-style: solid;
+  background: transparent;
+  white-space: nowrap;
+}
+
+/* 수정 버튼 - 검은 배경 + 흰색 테두리 (두번째 스샷 스타일) */
+.list-btn--edit {
+  border-color: rgba(255, 255, 255, 0.6);
+  color: #ffffff;
+  background: #111111;
+}
+
+.list-btn--edit:hover {
+  background: #222222;
+}
+
+/* 삭제 버튼 - 빨간 테두리 + 빨간 글씨 (회원탈퇴 버튼 스타일) */
+.list-btn--delete {
+  border-color: #ff4d4d;
+  color: #ff4d4d;
+  background: #000000;
+}
+
+.list-btn--delete:hover {
+  background: rgba(255, 77, 77, 0.08);
+}
+
+
+/* PRICE, SALES, DATE는 한 줄 + 정렬 고정 */
+.col-price,
+.col-sales,
+.col-date {
+  white-space: nowrap;
+}
+
+.col-sales {
+  text-align: center;
+}
+
+.col-price {
+  text-align: right;
+}
+
+.col-date {
+  text-align: center;
+}
+
+/* “준비중입니다 / 내역 없음” 문구용 */
+.empty-text {
+  margin-top: 16px;
+  font-size: 14px;
+  opacity: 0.7;
+  text-align: center;
+}
+
+/* ================= 템플릿 수정 모달 (등록 모달 스타일 복붙) ================= */
+
+.modal-overlay.edit-template-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+}
+
+.modal-overlay.edit-template-modal .modal-container {
+  width: 1050px;
+  max-height: 92vh;
+  overflow-y: hidden;
+  background: #111;
+  padding: 30px;
+  border-radius: 14px;
+  color: white;
+  border: 1px solid rgba(255,255,255,0.15);
+}
+
+.modal-overlay.edit-template-modal .modal-title {
+  font-size: 24px;
+  margin-bottom: 10px;
+}
+
+.modal-overlay.edit-template-modal .modal-body-grid {
+  display: flex;
+  gap: 30px;
+  height: 70vh;
+}
+
+/* 숫자 인풋 화살표 제거 */
+.modal-overlay.edit-template-modal input[type="number"]::-webkit-outer-spin-button,
+.modal-overlay.edit-template-modal input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.modal-overlay.edit-template-modal input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* LEFT */
+.modal-overlay.edit-template-modal .left-panel {
+  flex: 2;
+  max-height: 70vh;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+/* RIGHT */
+.modal-overlay.edit-template-modal .right-panel {
+  flex: 1;
+  background: #181818;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.12);
+  height: 70%;
+  position: sticky;
+  top: 0;
+}
+
+.modal-overlay.edit-template-modal .image-box {
+  margin-bottom: 30px;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-overlay.edit-template-modal .right-title {
+  margin-bottom: 15px;
+}
+
+/* 이미지 미리보기 */
+.modal-overlay.edit-template-modal .image-preview-frame {
+  width: 100%;
+  height: 130px;
+  background: #121212;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.15);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 10px;
+  overflow: hidden;
+}
+
+.modal-overlay.edit-template-modal .image-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.modal-overlay.edit-template-modal .image-preview.empty {
+  color: rgba(255,255,255,0.4);
+  font-size: 13px;
+}
+
+/* 입력 요소 */
+.modal-overlay.edit-template-modal .input,
+.modal-overlay.edit-template-modal .textarea,
+.modal-overlay.edit-template-modal select,
+.modal-overlay.edit-template-modal .input-sm {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 12px;
+  background: #222;
+  color: white;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.modal-overlay.edit-template-modal .input-sm {
+  width: 140px;
+}
+
+.modal-overlay.edit-template-modal .textarea {
+  min-height: 80px;
+}
+
+/* Day 탭 */
+.modal-overlay.edit-template-modal .day-tabs {
+  display: flex;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.modal-overlay.edit-template-modal .day-tab {
+  padding: 10px 15px;
+  background: #222;
+  border-radius: 8px;
+  cursor: pointer;
+  border: none;
+}
+
+.modal-overlay.edit-template-modal .day-tab.active {
+  background: #e60023;
+}
+
+/* 운동 리스트 */
+.modal-overlay.edit-template-modal .exercise-section {
+  margin-top: 10px;
+}
+
+.modal-overlay.edit-template-modal .exercise-item {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 10px;
+  align-items: center;
+}
+
+.modal-overlay.edit-template-modal .add-btn {
+  margin-top: 10px;
+  padding: 10px;
+  background: #333;
+  border-radius: 6px;
+  border: none;
+  color: #fff;
+}
+
+.modal-overlay.edit-template-modal .delete-btn {
+  background: #b80000;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: none;
+  color: #fff;
+}
+
+/* 하단 버튼 */
+.modal-overlay.edit-template-modal .bottom-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.modal-overlay.edit-template-modal .submit-btn {
+  padding: 10px 20px;
+  background: #e60023;
+  border-radius: 8px;
+  border: none;
+  color: #fff;
+}
+
+.modal-overlay.edit-template-modal .cancel-btn {
+  padding: 10px 20px;
+  background: #333;
+  border-radius: 8px;
+  border: none;
+  color: #fff;
+}
+
+
 /* ================= 반응형 ================= */
 @media (max-width: 860px) {
   .mypage-shell {
@@ -844,6 +1675,10 @@ const submitResetPassword = async () => {
   .btn-group {
     margin-top: 6px;
   }
-}
 
+  .empty-text {
+    font-size: 14px;
+    opacity: 0.7;
+  }
+}
 </style>
