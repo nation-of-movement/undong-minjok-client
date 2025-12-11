@@ -81,7 +81,7 @@
               <button class="delete-btn" @click="removeExercise(idx)">삭제</button>
             </div>
 
-            <!-- ✅ 이거 하나만 -->
+
             <button class="add-btn" @click="addExercise">+ 운동 추가</button>
           </div>
         </div>
