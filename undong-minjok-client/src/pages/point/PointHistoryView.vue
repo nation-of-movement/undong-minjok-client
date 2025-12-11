@@ -204,7 +204,7 @@ const goPointHistoryDetail = async (pointId) => {
     const data = response.data.data.pointDetailDTO
 
     detailInfo.accountNumber = maskAccountNumber(data.accountNumber)
-    detailInfo.amount = data.amount
+    detailInfo.amount = data.amount ;
     detailInfo.bank = data.bank ? KOREA_BANK_LIST[data.bank].label : null;
     detailInfo.createdDt = data.createdDt
     detailInfo.method = data.paymentMethod
@@ -233,8 +233,8 @@ const goPointHistoryDetail = async (pointId) => {
       </div>
     </div>
     <div class="point-sub-block">
-      <span>판매 포인트 </span>
-      <span>{{ formatNumberWithCommas(sellingPoint) }}P</span>
+      <span class="red-font">판매 포인트 </span>
+      <span class="red-font">{{ formatNumberWithCommas(sellingPoint) }}P</span>
     </div>
   </div>
 
@@ -364,9 +364,8 @@ const goPointHistoryDetail = async (pointId) => {
             <span>{{ detailLabel }}</span>
             <span>{{ formatNumberWithCommas(detailInfo.amount) }} {{ detailUnit }}</span>
           </div>
-
         </div>
-        <div class="detail-contents">
+        <div class="detail-contents"  v-if="detailInfo.pointStatus != 'EARN'">
           <div class="detail-between">
             <span>결제 수단</span>
             <span v-if="PAYMENT_METHOD[detailInfo.method]" >{{PAYMENT_METHOD[detailInfo.method].label }}</span>
@@ -409,6 +408,12 @@ const goPointHistoryDetail = async (pointId) => {
   display: flex;
   justify-content: space-between;
   gap: 100px;
+
+}
+
+.point-sub-block .red-font {
+  color: red;
+  font-weight: bold;
 }
 
 .btn-red {
