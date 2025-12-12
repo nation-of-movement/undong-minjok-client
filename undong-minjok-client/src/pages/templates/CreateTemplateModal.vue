@@ -1,5 +1,5 @@
 <template>
-  <div class="modal-overlay">
+  <div class="modal-overlay" >
     <div class="modal-container">
 
       <h2 class="modal-title">새 템플릿 등록하기</h2>
@@ -182,7 +182,6 @@ export default {
       try {
         const res = await api.get("/equipments/all")
         this.equipments = res.data.data || res.data || [];
-        console.log("장비 목록:", this.equipments);
       } catch (e) {
         console.error("장비 목록 로드 실패", e);
       }

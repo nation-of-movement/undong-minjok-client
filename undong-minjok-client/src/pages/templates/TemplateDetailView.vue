@@ -174,8 +174,6 @@ export default {
         const res = await templateApi.getDetail(id)
         const d = res.data.data
 
-        console.log('🔥 응답받은 isMine:', d.isMine)
-
         // DTO → 화면용 데이터 매핑
         this.template.id = d.id
         this.template.title = d.name
