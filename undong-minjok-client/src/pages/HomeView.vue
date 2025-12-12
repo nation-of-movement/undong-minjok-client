@@ -260,6 +260,9 @@ export default {
 </script>
 
 <style scoped>
+.home {
+  padding-top: 80px;
+}
 
 /* 검색바 + 정렬탭 같은 줄 */
 .search-sort-row {

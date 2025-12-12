@@ -2,6 +2,7 @@
   <div class="detail-page">
     <!-- HEADER BAR -->
     <HeaderBar />
+    <RouterView />
 
     <!-- TOP: 1 : 2 비율 -->
     <section class="top-section">
