@@ -102,7 +102,6 @@ onMounted(async () => {
   try {
     tossPaymentsInstance.value = await loadTossPaymentsSDK(clientKey)
     paymentReady.value = true
-    console.log('TossPayments SDK 로드 완료')
   } catch (err) {
     console.error(err)
     alert('결제 모듈 로딩에 실패했어요! 다시 시도해주세요.')
