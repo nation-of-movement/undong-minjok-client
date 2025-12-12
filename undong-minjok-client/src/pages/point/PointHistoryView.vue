@@ -99,7 +99,6 @@ const withdraw = async () => {
     accountNumber: withdrawInfo.accountNumber,
   }
 
-  console.log('payload', payload)
   try {
     const response = await withdrawApi(payload)
     if (response.data.success) {
@@ -136,14 +135,12 @@ const onWithdraw = () => {
     return
   }
 
-  console.log(withdrawInfo);
   // 출금 api
   withdraw()
 }
 
 onMounted(async () => {
   const result = await loadPointHistory()
-  console.log(result)
   if (result) {
     pointHistory.value = result.points
     pointStatus.value = result.pointStatuses
@@ -188,7 +185,7 @@ watch(
 )
 /*
 watch(() => withdrawInfo.bank, (v) => {
-  console.log("선택된 은행:", v)
+  ("선택된 은행:", v)
 })*/
 
 // 마스킹
@@ -216,8 +213,6 @@ const goPointHistoryDetail = async (pointId) => {
   // detail 가져오기
   try {
     const response = await fetchPointHistoryDetail(pointId)
-    console.log('detail', response.data.data)
-
     const data = response.data.data.pointDetailDTO
 
     detailInfo.accountNumber = maskAccountNumber(data.accountNumber)

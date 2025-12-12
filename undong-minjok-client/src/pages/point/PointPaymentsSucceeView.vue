@@ -16,7 +16,7 @@ const paymentInfo = reactive({
   date : ''
 })
 
-console.log(pageType)
+
 // 확인 btn
 const closeBtn = () => {
   router.push({ path: '/'});
@@ -33,7 +33,7 @@ async function confirm() {
     return await paymentsConfirmApi(payload)
 
   } catch (e) {
-    console.log(e)
+    console.error('결제 실패:', e)
 
   }
 }
