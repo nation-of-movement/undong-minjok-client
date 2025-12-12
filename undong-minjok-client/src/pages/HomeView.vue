@@ -86,8 +86,6 @@
           <span class="thumb-tag">{{ item.tag }}</span>
           <span class="thumb-label">{{ item.label }}</span>
 
-          <span class="price-badge" v-if="item.price > 0">₩{{ item.price }}</span>
-          <span class="price-badge" v-else>무료</span>
         </div>
 
         <div class="card-body">
@@ -108,14 +106,12 @@
 
             <div class="stats">
               <div class="stat-item">❤️ {{ item.like }}</div>
+              <div class="price-text">
+                {{ item.price === 0 ? '무료' : '₩' + item.price }}
+            </div>
             </div>
           </div>
 
-          <div class="buy-row">
-            <span :class="{ free: item.price === 0 }" class="price-text">
-              {{ item.price === 0 ? '무료' : '₩' + item.price }}
-            </span>
-          </div>
         </div>
       </article>
     </section>
@@ -394,6 +390,7 @@ export default {
 }
 
 .thumb {
+  position: relative;
   height: 150px;
   background: #1a1a1a;
   border-radius: 12px;
@@ -404,17 +401,6 @@ export default {
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-
-.price-badge {
-  position: absolute;
-  bottom: 8px;
-  right: 8px;
-  padding: 4px 8px;
-  font-size: 11px;
-  border-radius: 999px;
-  background: #e60023;
-  color: white;
 }
 
 .template-title {
@@ -463,4 +449,16 @@ export default {
   font-weight: bold;
 }
 
+.stats {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.price-text {
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0.85;
+}
 </style>
