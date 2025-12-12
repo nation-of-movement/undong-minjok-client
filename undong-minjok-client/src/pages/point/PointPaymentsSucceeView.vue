@@ -60,7 +60,7 @@ onMounted(async () => {
       <div v-if="pageType == 'success'">
         <div class="block-header">
           <h1>✅</h1>
-          <h3>결제가 완료되었습니다.</h3>
+          <h3>결제 완료되었습니다.</h3>
         </div>
         <div class="block-contents">
           <div class="payment-info-div">

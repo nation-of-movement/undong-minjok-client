@@ -1,5 +1,5 @@
 <template>
-  <div class="modal-overlay" @click.self="close">
+  <div class="modal-overlay">
     <div class="modal-container">
 
       <h2 class="modal-title">새 템플릿 등록하기</h2>
