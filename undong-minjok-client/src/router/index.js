@@ -4,7 +4,6 @@ import HomeView from "@/pages/HomeView.vue";
 import { useAuthStore } from '@/stores/authStore';
 import PointPaymentsView from '@/pages/point/PointPaymentsView.vue'
 import PointPaymentsSucceeView from "@/pages/point/PointPaymentsSucceeView.vue";
-import PointPaymentsFailView from "@/pages/point/PointPaymentsFailView.vue";
 import MonthSelectView
   from '@/pages/DailyWorkoutRecord/calender/MonthSelectView.vue'
 import CalendarView from '@/pages/DailyWorkoutRecord/calender/CalendarView.vue'
@@ -24,7 +23,9 @@ const routes = [
       { path: "password/search", component: () => import("@/pages/user/PasswordSearchView.vue") },
       { path: "password/reset", component: () => import("@/pages/user/ResetPasswordView.vue") },
       { path: "profile", component: () => import("@/pages/user/ProfileView.vue"), meta: { requiresAuth: true } },
-      { path: "/point-history", name: "PointHistory", component: PointHistoryView , meta: { requiresAuth: true }}
+      { path: "/point-history", name: "PointHistory", component: PointHistoryView , meta: { requiresAuth: true }},
+      { path: '/point-charge', name: 'PointPayments',component: PointPaymentsView , props: true},
+      { path: "/success", name: "Success", component: PointPaymentsSucceeView },
     ]
   },
   {
@@ -45,19 +46,7 @@ const routes = [
     props: route => ({ date: route.query.date })
     // → query 로 넘긴 date를 props 로 받을 수 있게 함
   },
-// 포인트 - 결제하기
-  { path: '/payments', name: 'PointPayments',component: PointPaymentsView },
-  {
-    path: "/success",
-    name: "Success",
-    component: PointPaymentsSucceeView
-  },
-  {
-    path: "/fail",
-    name: "Fail",
-    component: PointPaymentsFailView
-  },
-  // -------------------- 템플릿 상세 페이지 --------------------
+// -------------------- 템플릿 상세 페이지 --------------------
   {
     path: "/templates/:id",
     name: "TemplateDetail",

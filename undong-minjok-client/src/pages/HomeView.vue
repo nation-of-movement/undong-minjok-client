@@ -8,15 +8,11 @@
         <p>오늘의 운동을 기록하러 가보세요!</p>
       </div>
 
-      <div class="feature-card">
-        <h3>🔥 챌린지 참여</h3>
-        <p>운동 기록하고 랭킹에 도전하세요.</p>
+      <div class="feature-card"  @click="goToCharge">
+        <h3>💳 충전하기</h3>
+        <p>프리미엄 기능을 지금 바로 이용해보세요.</p>
       </div>
 
-      <div class="feature-card">
-        <h3>💬 커뮤니티</h3>
-        <p>운동하는 사람들과 실시간으로 소통하세요.</p>
-      </div>
     </section>
 
     <!-- HERO — 로그인 안하면 출력 -->
@@ -90,8 +86,6 @@
           <span class="thumb-tag">{{ item.tag }}</span>
           <span class="thumb-label">{{ item.label }}</span>
 
-          <span class="price-badge" v-if="item.price > 0">₩{{ item.price }}</span>
-          <span class="price-badge" v-else>무료</span>
         </div>
 
         <div class="card-body">
@@ -112,14 +106,12 @@
 
             <div class="stats">
               <div class="stat-item">❤️ {{ item.like }}</div>
+              <div class="price-text">
+                {{ item.price === 0 ? '무료' : '₩' + item.price }}
+            </div>
             </div>
           </div>
 
-          <div class="buy-row">
-            <span :class="{ free: item.price === 0 }" class="price-text">
-              {{ item.price === 0 ? '무료' : '₩' + item.price }}
-            </span>
-          </div>
         </div>
       </article>
     </section>
@@ -151,6 +143,7 @@ import { useAuthStore } from "@/stores/authStore"
 import TemplateList from "@/pages/templates/TemplateList.vue";
 import CreateTemplateModal from "@/pages/templates/CreateTemplateModal.vue";
 import { templateApi } from "@/api/axios";
+import { useRouter } from 'vue-router'
 
 export default {
   name: "HomeView",
@@ -203,6 +196,10 @@ export default {
 
     openCreateModal() {
       this.showCreateModal = true;
+    },
+
+    goToCharge() {
+      this.$router.push("/point-charge")
     },
 
     async fetchTemplates() {
@@ -259,8 +256,11 @@ export default {
 </script>
 
 <style scoped>
+.home {
+  padding-top: 80px;
+}
 
-/* ⭐ 검색바 + 정렬탭 같은 줄 */
+/* 검색바 + 정렬탭 같은 줄 */
 .search-sort-row {
   display: flex;
   justify-content: space-between;
@@ -390,6 +390,7 @@ export default {
 }
 
 .thumb {
+  position: relative;
   height: 150px;
   background: #1a1a1a;
   border-radius: 12px;
@@ -400,17 +401,6 @@ export default {
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-
-.price-badge {
-  position: absolute;
-  bottom: 8px;
-  right: 8px;
-  padding: 4px 8px;
-  font-size: 11px;
-  border-radius: 999px;
-  background: #e60023;
-  color: white;
 }
 
 .template-title {
@@ -459,4 +449,16 @@ export default {
   font-weight: bold;
 }
 
+.stats {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.price-text {
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0.85;
+}
 </style>
