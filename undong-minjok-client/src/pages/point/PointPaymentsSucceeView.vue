@@ -5,7 +5,7 @@ import { paymentsConfirmApi } from '@/api/paymentsApi.js'
 
 const router = useRouter();
 const route = useRoute();
-const pageType = ref(false)
+const pageType = ref('fail')
 const orderId = route.query.orderId;  // 주문 id
 const paymentKey = route.query.paymentKey; // key
 const amount = route.query.amount; // 그액
@@ -16,6 +16,7 @@ const paymentInfo = reactive({
   date : ''
 })
 
+console.log(pageType)
 // 확인 btn
 const closeBtn = () => {
   router.push({ path: '/'});
@@ -39,85 +40,123 @@ async function confirm() {
 
 onMounted(async () => {
    const response = await confirm();
-   console.log(response);
 
    if (response.data.success) {
      pageType.value = 'success';
      const data = response.data.data;
-     console.log(data);
+
      paymentInfo.date = data.createdDt
      paymentInfo.amount = data.amount;
      paymentInfo.status = data.status;
      paymentInfo.method = data.method;
    }
 
-   console.log( pageType.value);
 })
 </script>
 
 <template>
-  <div class="block" v-if="pageType.value == 'success'">
-      <h1>✅</h1>
-      <h3>결제가 완료되었습니다.</h3>
-    <div class="card">
-      <div class="payment-info-div">
-        <span>결제 수단: </span>
-        <span>{{ paymentInfo.method }}</span>
+  <div class="container">
+    <div class="block">
+      <div v-if="pageType == 'success'">
+        <div class="block-header">
+          <h1>✅</h1>
+          <h3>결제가 완료되었습니다.</h3>
+        </div>
+        <div class="block-contents">
+          <div class="payment-info-div">
+            <span>결제 수단: </span>
+            <span>{{ paymentInfo.method }}</span>
+          </div>
+          <div class="payment-info-div">
+            <span>포인트 금액 : </span>
+            <span>{{ paymentInfo.amount }}원</span>
+          </div>
+          <div class="payment-info-div">
+            <span>결제일 : </span>
+            <span>{{ paymentInfo.date.split('T')[0] }}</span>
+          </div>
+        </div>
       </div>
-      <div class="payment-info-div">
-        <span>포인트 금액 : </span>
-        <span>{{ paymentInfo.amount }}원</span>
+
+      <div v-else-if="pageType == 'fail'">
+        <div class="block-header">
+          <h1>❎</h1>
+          <h3>결제 실패했습니다.</h3>
+        </div>
       </div>
-      <div class="payment-info-div">
-        <span>결제일 : </span>
-        <span>{{ paymentInfo.date.split('T')[0] }}</span>
+
+      <div class="block-btn">
+        <button @click="closeBtn" class="closeBtn">확인</button>
       </div>
     </div>
-
-
-    <button @click="closeBtn">확인</button>
-  </div>
-
-  <div v-else-if="pageType.value == 'fail'">
-    <h1>결제에 실패했습니다.</h1>
   </div>
 </template>
 
 <style scoped>
+
+.container {
+  .container {
+    width: 800px;
+    margin: auto;
+  }
+}
+
 .block {
+  background: #0a0a0a;
+  width: 800px;
+  height: 500px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+.block-header {
+  padding-top: 100px;
+  width: 100%;
   display: flex;
   flex-direction: column;
-  align-items: center; /* 가로 중앙 */
-  justify-content: center; /* 세로 중앙 */
-  height: 700px; /* 화면 전체 높이 */
-  width: 700px; /* 원하는 폭 */
-  margin: 0 auto; /* 혹시 flex 안 쓰는 경우 가로 중앙 */
-  background-color: white;
-  padding: 60px;
-  border-radius: 12px;
-  box-sizing: border-box;
+  justify-content: center;
+  align-items: center;
 }
 
-.card {
-  padding: 50px;
+.block-btn {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-top: 20px;
 }
+
+.block-contents {
+  width: 100%;
+  padding : 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
 .payment-info-div {
-
   display: flex;
   justify-content: space-between;
   align-items: center;
   width: 400px;
 }
 
-button {
-  margin-top: 40px;
-  height: 40px;
-  width: 60px;
-  background-color: red;
-  border-radius: 5px;
-  border: 1px;
+.block-btn button {
+  width: 80px;
+  padding: 8px 14px;
+  background: #0f0f0f;
   color: white;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 10px;
+  font-size: 15px;
+  cursor: pointer;
 }
+
+
+
+
 
 
 </style>

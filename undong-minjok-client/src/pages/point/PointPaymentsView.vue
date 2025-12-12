@@ -1,24 +1,23 @@
 <template>
-  <div class="block">
-    <h3>💰포인트 충전</h3>
-
-    <div class="card">
-      <input
-        type="number"
-        class="input-large"
-        min="100"
-        v-model.number="amount"
-        placeholder="충전할 금액을 입력해주세요."
-      />
-      <div class="btn-card">
-        <button @click="addAmount(0)">초기화</button>
-        <button @click="addAmount(1000)">+1,000원</button>
-        <button @click="addAmount(5000)">+5,000원</button>
-        <button @click="addAmount(10000)">+10,000원</button>
+  <div class="container">
+    <div class="block">
+      <h3 class="title">충전하기</h3>
+      <div class="card">
+        <input
+          type="number"
+          class="input-large"
+          min="100"
+          v-model.number="amount"
+          placeholder="충전할 금액을 입력해주세요."
+        />
+        <div class="btn-card">
+          <button @click="addAmount(0)">초기화</button>
+          <button @click="addAmount(1000)">+1,000원</button>
+          <button @click="addAmount(5000)">+5,000원</button>
+          <button @click="addAmount(10000)">+10,000원</button>
+        </div>
       </div>
-    </div>
 
-    <div class="wrapper">
       <div class="box_section">
         <div class="div-btn">
           <button
@@ -37,21 +36,20 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { paymentsPrepareApi } from '../../api/paymentsApi.js'
 import { useRouter } from 'vue-router'
 import HeaderBar from '@/components/HeaderBar.vue'
 
 // Toss 클라이언트 키
 const clientKey = 'test_ck_LlDJaYngroa7b9vy92zm3ezGdRpX'
-const router = useRouter();
+const router = useRouter()
 // 상태 변수
 const amount = ref(0)
 const paymentReady = ref(false)
 const tossPaymentsInstance = ref(null)
-
 const closePayment = () => {
-  router.push('/profile');
+  router.push('/')
 }
 
 // Toss SDK 로더 (수정된 완전 버전)
@@ -112,14 +110,12 @@ onMounted(async () => {
 })
 
 // 버튼 활성화 조건
-const ready = computed(() => {
-  return amount.value >= 100 && paymentReady.value
-})
+const ready = computed(() => paymentReady.value)
 
 // 결제 버튼 클릭 시
 function checkAmount() {
   if (amount.value < 100) {
-    alert("100원 이상 입력해주세요.")
+    alert("100원이상 결제해주세요.")
     return
   }
   requestPayment()
@@ -128,22 +124,21 @@ function checkAmount() {
 // 결제 요청
 async function requestPayment() {
   if (!tossPaymentsInstance.value) {
-   //  alert("SDK 로드 대기 중입니다.")
+    //  alert("SDK 로드 대기 중입니다.")
     return
   }
 
-  const orderId = generateRandomString();
+  const orderId = generateRandomString()
 
   let payload = {
-    orderId : orderId,
-    amount : amount.value,
-    paymentId : paymentReady.value,
+    orderId: orderId,
+    amount: amount.value,
+    paymentId: paymentReady.value,
   }
 
   try {
-
     // 레디스 저장
-    await paymentsPrepareApi(payload);
+    await paymentsPrepareApi(payload)
 
     // 토스 결제
     await tossPaymentsInstance.value.requestPayment('CARD', {
@@ -157,45 +152,45 @@ async function requestPayment() {
     })
   } catch (err) {
     console.error('결제 요청 실패:', err)
-    await router.push('/');
-
+    await router.push('/')
   }
 }
 </script>
 
-
 <style scoped>
-body,
-html {
-  height: 100%;
-  margin: 0;
+.container {
+  width: 800px;
+  margin: auto;
 }
+
 .block {
-  display: flex;
-  flex-direction: column;
-  align-items: center; /* 가로 중앙 */
-  justify-content: center; /* 세로 중앙 */
-  min-height: 100vh; /* 화면 전체 높이 */
-  width: 700px; /* 원하는 폭 */
-  margin: 0 auto; /* 혹시 flex 안 쓰는 경우 가로 중앙 */
-  background-color: white;
-  padding: 50px;
+  background: #0a0a0a;
+  width: 800px;
+  height: 500px;
   border-radius: 12px;
-  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+.title {
+  width: 100%;
+  text-align: left; /* 왼쪽 정렬 */
+  padding-left: 40px;
+  padding-top: 20px;
 }
 
 .card {
-  width: 400px; /* 카드 폭 고정 */
+  width: 100%; /* 카드 폭 고정 */
   display: flex;
   flex-direction: column;
   align-items: center; /* 카드 중앙 정렬 */
-  background-color: white;
   border-radius: 12px;
-  padding: 20px;
   box-sizing: border-box;
+  padding-top: 70px;
 }
 
 .btn-card {
+  width: 370px;
   display: flex;
   justify-content: flex-end; /* 오른쪽 정렬 */
   margin-top: 10px;
@@ -203,22 +198,26 @@ html {
 }
 
 .btn-card button {
-  height: 30px;
-  background-color: white;
-  border-radius: 5px;
-  border: 1px solid #e60023;
-}
-.wrapper {
-  width: 500px;
-}
-.input-large {
-  width: 470px; /* 부모 .card 폭에 맞춤 */
-  height: 40px;
+  padding: 8px 14px;
+  background: #0f0f0f;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 10px;
-  border: 1px solid #ccc;
-  padding: 0 10px;
-  outline: none;
-  box-sizing: border-box;
+  font-size: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.input-large {
+  width: 340px;
+  height: 44px;
+  padding: 0 15px;
+  background: #0f0f0f;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 10px;
+  font-size: 15px;
   text-align: right;
 }
 
@@ -232,20 +231,25 @@ input[type='number'] {
   -moz-appearance: textfield;
 }
 
+.box_section {
+  padding-top: 50px;
+}
+
 .payments-btn {
   height: 40px;
   width: 300px;
   background-color: red;
   border-radius: 5px;
   border: 1px;
-  color: white;
+  color: black;
+  font-weight: bold;
 }
 
 .div-btn {
   display: flex;
   flex-direction: column; /* ← 세로 정렬 핵심 */
   justify-content: center; /* 세로 기준 중앙 정렬 */
-  align-items: center;     /* 가로 기준 중앙 정렬 */
+  align-items: center; /* 가로 기준 중앙 정렬 */
   width: 100%;
 }
 
