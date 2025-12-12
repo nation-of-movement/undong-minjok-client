@@ -379,14 +379,8 @@ const openEditTemplateModal = async (templateId) => {
 }
 
 // ================= 템플릿 수정 모달 상태 =================
-const editName = ref('')
 const editContent = ref('')
 const editPrice = ref(0)
-
-const editThumbnailFile = ref(null)
-const editDetailImageFile = ref(null)
-const editPreviewThumbnail = ref(null)
-const editPreviewDetail = ref(null)
 
 const editCurrentDay = ref(1)
 
@@ -400,13 +394,8 @@ const editDayExercises = ref(createEmptyDayMap())
 // 템플릿 상세 불러와서 모달에 채우기
 const prepareEditModalData = async (templateId) => {
   // 기본값 초기화
-  editName.value = ''
   editContent.value = ''
   editPrice.value = 0
-  editThumbnailFile.value = null
-  editDetailImageFile.value = null
-  editPreviewThumbnail.value = null
-  editPreviewDetail.value = null
   editCurrentDay.value = 1
   editDayExercises.value = createEmptyDayMap()
 
@@ -414,16 +403,8 @@ const prepareEditModalData = async (templateId) => {
     const res = await templateApi.getDetail(templateId)
     const t = res.data.data
 
-    editName.value = t.name
     editContent.value = t.content
     editPrice.value = t.price
-
-    if (t.thumbnailImage) {
-      editPreviewThumbnail.value = IMAGE_BASE_URL + t.thumbnailImage
-    }
-    if (t.templateImage) {
-      editPreviewDetail.value = IMAGE_BASE_URL + t.templateImage
-    }
 
     if (t.days && Array.isArray(t.days)) {
       const dayMap = createEmptyDayMap()
@@ -431,11 +412,12 @@ const prepareEditModalData = async (templateId) => {
       t.days.forEach((dayDto) => {
         const d = dayDto.day
         if (!dayMap[d]) dayMap[d] = []
+
         ;(dayDto.exercises || []).forEach((ex, idx) => {
           dayMap[d].push({
             day: d,
             name: ex.name || '',
-            part: ex.part || null,              // 부위 코드/이름
+            part: ex.part || null,
             reps: ex.reps ?? null,
             weight: ex.weight ?? null,
             duration: ex.duration ?? null,
@@ -485,25 +467,10 @@ const handleEditExercisePartChange = async (ex) => {
     return
   }
   await loadEquipmentsForPart(ex.part)
-  ex.equipmentId = null  // 다른 부위 선택하면 장비 초기화
+  ex.equipmentId = null
 }
 
-// 파일 변경
-const onEditThumbnailChange = (e) => {
-  const file = e.target.files[0]
-  if (!file) return
-  editThumbnailFile.value = file
-  editPreviewThumbnail.value = URL.createObjectURL(file)
-}
-
-const onEditDetailImageChange = (e) => {
-  const file = e.target.files[0]
-  if (!file) return
-  editDetailImageFile.value = file
-  editPreviewDetail.value = URL.createObjectURL(file)
-}
-
-// 실제 수정 요청
+// 실제 수정 요청 (JSON PATCH)
 const submitEditTemplate = async () => {
   if (!editingTemplateId.value) return
 
@@ -519,21 +486,14 @@ const submitEditTemplate = async () => {
     })
   }
 
-  const dto = {
-    name: editName.value,
+  const payload = {
     content: editContent.value,
     price: editPrice.value,
-    status: editPrice.value > 0 ? 'PAID' : 'FREE',
     exercises,
   }
 
-  const form = new FormData()
-  form.append('data', JSON.stringify(dto))
-  if (editThumbnailFile.value) form.append('thumbnail', editThumbnailFile.value)
-  if (editDetailImageFile.value) form.append('detailImage', editDetailImageFile.value)
-
   try {
-    await templateApi.updateTemplate(editingTemplateId.value, form)
+    await templateApi.updateTemplate(editingTemplateId.value, payload)
     alert('템플릿이 수정되었습니다.')
     showEditTemplateModal.value = false
     fetchSales()
@@ -831,171 +791,105 @@ onMounted(() => {
     </div>
   </div>
 
-  <!-- ================= 템플릿 수정 모달 (등록 모달 스타일) ================= -->
+  <!-- ================= 템플릿 수정 모달 ================= -->
   <div
     class="modal-overlay edit-template-modal"
     v-if="showEditTemplateModal"
     @click.self="closeEditTemplateModal"
   >
     <div class="modal-container">
-      <h2 class="modal-title">템플릿 수정하기</h2>
+      <div class="modal-header">
+        <h2 class="modal-title">템플릿 수정하기</h2>
+        <button class="icon-close" @click="closeEditTemplateModal">✕</button>
+      </div>
 
-      <div class="modal-body-grid">
-        <!-- LEFT AREA: 기본정보 + Day + 운동 목록 -->
-        <div class="left-panel">
-          <div class="section">
-            <label>템플릿 제목</label>
-            <input
-              v-model="editName"
-              class="input"
-              type="text"
-              placeholder="예: 7일 분할 루틴"
-            />
+      <div class="modal-body">
+        <!-- 설명 -->
+        <div class="section">
+          <label>설명</label>
+          <textarea
+            v-model="editContent"
+            class="textarea"
+            placeholder="템플릿 설명을 입력하세요"
+          ></textarea>
 
-            <label>설명</label>
-            <textarea
-              v-model="editContent"
-              class="textarea"
-              placeholder="템플릿 설명을 입력하세요"
-            ></textarea>
-
-            <label>가격</label>
-            <input
-              v-model.number="editPrice"
-              class="input"
-              type="number"
-              min="0"
-              placeholder="가격을 입력하세요 (숫자만)"
-            />
-          </div>
-
-          <!-- Day 탭 -->
-          <div class="day-tabs">
-            <button
-              v-for="d in 7"
-              :key="d"
-              :class="['day-tab', { active: editCurrentDay === d }]"
-              @click="editCurrentDay = d"
-            >
-              Day {{ d }}
-            </button>
-          </div>
-
-          <!-- 운동 입력 UI -->
-          <div class="exercise-section">
-            <h3>Day {{ editCurrentDay }} 운동 목록</h3>
-
-            <div
-              v-for="(ex, idx) in editDayExercises[editCurrentDay]"
-              :key="idx"
-              class="exercise-item"
-            >
-              <input v-model="ex.name" class="input-sm" placeholder="운동명" />
-              <input
-                v-model.number="ex.reps"
-                class="input-sm"
-                type="number"
-                placeholder="횟수"
-              />
-              <input
-                v-model.number="ex.weight"
-                class="input-sm"
-                type="number"
-                placeholder="무게(kg)"
-              />
-              <input
-                v-model.number="ex.duration"
-                class="input-sm"
-                type="number"
-                placeholder="시간(sec)"
-              />
-
-              <!-- 부위 선택 -->
-              <select
-                v-model="ex.part"
-                class="input-sm"
-                @change="handleEditExercisePartChange(ex)"
-              >
-                <option :value="null">부위 선택</option>
-                <option
-                  v-for="part in parts"
-                  :key="part.id"
-                  :value="part.code"
-                >
-                  {{ part.name }}
-                </option>
-              </select>
-
-              <!-- 장비 선택 -->
-              <select v-model="ex.equipmentId" class="input-sm">
-                <option :value="null">장비 없음</option>
-                <option
-                  v-for="eq in (equipmentsMap[ex.part] || [])"
-                  :key="eq.id"
-                  :value="eq.id"
-                >
-                  {{ eq.name }}
-                </option>
-              </select>
-
-              <button class="delete-btn" @click="removeEditExercise(idx)">
-                삭제
-              </button>
-            </div>
-
-            <button class="add-btn" @click="addEditExercise">
-              + 운동 추가
-            </button>
-          </div>
+          <label>가격</label>
+          <input
+            v-model.number="editPrice"
+            class="input"
+            type="number"
+            min="0"
+            placeholder="가격을 입력하세요 (숫자만)"
+          />
         </div>
 
-        <!-- RIGHT AREA: 이미지 -->
-        <div class="right-panel">
-          <h3 class="right-title">이미지 수정</h3>
+        <!-- Day 탭 -->
+        <div class="day-tabs">
+          <button
+            v-for="d in 7"
+            :key="d"
+            :class="['day-tab', { active: editCurrentDay === d }]"
+            @click="editCurrentDay = d"
+          >
+            Day {{ d }}
+          </button>
+        </div>
 
-          <div class="image-box">
-            <label>썸네일 이미지</label>
-            <input type="file" @change="onEditThumbnailChange" />
-
-            <div class="image-preview-frame">
-              <img
-                v-if="editPreviewThumbnail"
-                :src="editPreviewThumbnail"
-                class="image-preview"
-              />
-              <div v-else class="image-preview empty">
-                현재 이미지를 유지합니다.
-              </div>
-            </div>
+        <!-- 운동 입력 UI -->
+        <div class="exercise-section">
+          <div class="exercise-head">
+            <h3>Day {{ editCurrentDay }} 운동 목록</h3>
+            <button class="add-btn" @click="addEditExercise">+ 운동 추가</button>
           </div>
 
-          <div class="image-box">
-            <label>상세 이미지</label>
-            <input type="file" @change="onEditDetailImageChange" />
+          <div
+            v-for="(ex, idx) in editDayExercises[editCurrentDay]"
+            :key="idx"
+            class="exercise-item"
+          >
+            <input v-model="ex.name" class="input-sm" placeholder="운동명" />
 
-            <div class="image-preview-frame">
-              <img
-                v-if="editPreviewDetail"
-                :src="editPreviewDetail"
-                class="image-preview"
-              />
-              <div v-else class="image-preview empty">
-                현재 이미지를 유지합니다.
-              </div>
-            </div>
+            <select
+              v-model="ex.part"
+              class="input-sm"
+              @change="handleEditExercisePartChange(ex)"
+            >
+              <option :value="null">부위 선택</option>
+              <option v-for="part in parts" :key="part.id" :value="part.code">
+                {{ part.name }}
+              </option>
+            </select>
+
+            <select v-model="ex.equipmentId" class="input-sm">
+              <option :value="null">장비 없음</option>
+              <option v-for="eq in (equipmentsMap[ex.part] || [])" :key="eq.id" :value="eq.id">
+                {{ eq.name }}
+              </option>
+            </select>
+
+            <input v-model.number="ex.reps" class="input-sm" type="number" placeholder="횟수" />
+            <input v-model.number="ex.weight" class="input-sm" type="number" placeholder="kg" />
+            <input v-model.number="ex.duration" class="input-sm" type="number" placeholder="sec" />
+
+            <button class="delete-btn" @click="removeEditExercise(idx)">삭제</button>
+          </div>
+
+          <div v-if="!(editDayExercises[editCurrentDay] || []).length" class="empty-ex">
+            운동이 없습니다. “+ 운동 추가”로 추가하세요.
           </div>
         </div>
       </div>
 
-      <!-- 버튼 -->
-      <div class="bottom-buttons">
-        <button class="submit-btn" @click="submitEditTemplate">수정하기</button>
+      <div class="modal-footer">
         <button class="cancel-btn" @click="closeEditTemplateModal">닫기</button>
+        <button class="submit-btn" @click="submitEditTemplate">수정하기</button>
       </div>
     </div>
   </div>
 
+
 </template>
+
 <style scoped>
 .field-footer-between {
   margin-top: 10px;
@@ -1485,38 +1379,215 @@ onMounted(() => {
   text-align: center;
 }
 
-/* ================= 템플릿 수정 모달 (등록 모달 스타일 복붙) ================= */
+/* ================= 템플릿 수정 모달 ================= */
 
 .modal-overlay.edit-template-modal {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.6);
+  background: rgba(0, 0, 0, 0.72); /* 뒤 화면 더 진하게 */
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 2000;
+  padding: 20px;
 }
 
 .modal-overlay.edit-template-modal .modal-container {
-  width: 1050px;
-  max-height: 92vh;
-  overflow-y: hidden;
-  background: #111;
-  padding: 30px;
-  border-radius: 14px;
-  color: white;
-  border: 1px solid rgba(255,255,255,0.15);
+  width: min(980px, 92vw);
+  max-height: 86vh;
+
+  background: #111; /* ✅ 진한 직사각형 바탕 */
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.85);
+
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* 헤더 */
+.modal-overlay.edit-template-modal .modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 16px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .modal-overlay.edit-template-modal .modal-title {
-  font-size: 24px;
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.modal-overlay.edit-template-modal .icon-close {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  cursor: pointer;
+}
+
+.modal-overlay.edit-template-modal .icon-close:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* 바디: 여기만 스크롤 */
+.modal-overlay.edit-template-modal .modal-body {
+  padding: 18px;
+  overflow-y: auto;
+}
+
+/* input/textarea/select 공통 */
+.modal-overlay.edit-template-modal .input,
+.modal-overlay.edit-template-modal .textarea,
+.modal-overlay.edit-template-modal select,
+.modal-overlay.edit-template-modal .input-sm {
+  background: #1b1b1b;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 10px;
+  font-size: 13px;
+  outline: none;
+}
+
+.modal-overlay.edit-template-modal .input,
+.modal-overlay.edit-template-modal .textarea,
+.modal-overlay.edit-template-modal select {
+  width: 100%;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+}
+
+.modal-overlay.edit-template-modal .textarea {
+  min-height: 96px; /* ✅ 잘리는 느낌 방지 */
+  resize: vertical;
+}
+
+.modal-overlay.edit-template-modal label {
+  display: block;
+  margin: 10px 0 6px;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+/* Day 탭 */
+.modal-overlay.edit-template-modal .day-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 8px 0 14px;
+}
+
+.modal-overlay.edit-template-modal .day-tab {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #171717;
+  color: rgba(255, 255, 255, 0.82);
+  cursor: pointer;
+}
+
+.modal-overlay.edit-template-modal .day-tab.active {
+  background: #e60023;
+  border-color: #e60023;
+  color: #fff;
+}
+
+/* 운동 리스트 */
+.modal-overlay.edit-template-modal .exercise-section {
+  margin-top: 10px;
+}
+
+.modal-overlay.edit-template-modal .exercise-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
   margin-bottom: 10px;
 }
 
-.modal-overlay.edit-template-modal .modal-body-grid {
+.modal-overlay.edit-template-modal .exercise-head h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.modal-overlay.edit-template-modal .exercise-item {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1fr 0.8fr 0.8fr 0.8fr auto;
+  gap: 8px;
+  align-items: center;
+
+  padding: 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 10px;
+}
+
+.modal-overlay.edit-template-modal .input-sm {
+  width: 100%;
+  padding: 9px 10px;
+}
+
+/* 버튼들 */
+.modal-overlay.edit-template-modal .add-btn {
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.modal-overlay.edit-template-modal .add-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.modal-overlay.edit-template-modal .delete-btn {
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 77, 77, 0.5);
+  background: rgba(255, 77, 77, 0.08);
+  color: #ff4d4d;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* 푸터: ✅ 옆으로 길게 늘어선 버튼 제거, 정상 크기 */
+.modal-overlay.edit-template-modal .modal-footer {
   display: flex;
-  gap: 30px;
-  height: 70vh;
+  justify-content: flex-end;
+  gap: 10px;
+
+  padding: 14px 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.modal-overlay.edit-template-modal .submit-btn,
+.modal-overlay.edit-template-modal .cancel-btn {
+  padding: 10px 16px;        /* ✅ 버튼 길이 고정 */
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.modal-overlay.edit-template-modal .submit-btn {
+  background: #e60023;
+  border-color: #e60023;
+  color: #fff;
+}
+
+.modal-overlay.edit-template-modal .cancel-btn {
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
 }
 
 /* 숫자 인풋 화살표 제거 */
@@ -1529,155 +1600,11 @@ onMounted(() => {
   -moz-appearance: textfield;
 }
 
-/* LEFT */
-.modal-overlay.edit-template-modal .left-panel {
-  flex: 2;
-  max-height: 70vh;
-  overflow-y: auto;
-  padding-right: 5px;
-}
-
-/* RIGHT */
-.modal-overlay.edit-template-modal .right-panel {
-  flex: 1;
-  background: #181818;
-  padding: 20px;
-  border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.12);
-  height: 70%;
-  position: sticky;
-  top: 0;
-}
-
-.modal-overlay.edit-template-modal .image-box {
-  margin-bottom: 30px;
-  display: flex;
-  flex-direction: column;
-}
-
-.modal-overlay.edit-template-modal .right-title {
-  margin-bottom: 15px;
-}
-
-/* 이미지 미리보기 */
-.modal-overlay.edit-template-modal .image-preview-frame {
-  width: 100%;
-  height: 130px;
-  background: #121212;
-  border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.15);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-top: 10px;
-  overflow: hidden;
-}
-
-.modal-overlay.edit-template-modal .image-preview {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.modal-overlay.edit-template-modal .image-preview.empty {
-  color: rgba(255,255,255,0.4);
-  font-size: 13px;
-}
-
-/* 입력 요소 */
-.modal-overlay.edit-template-modal .input,
-.modal-overlay.edit-template-modal .textarea,
-.modal-overlay.edit-template-modal select,
-.modal-overlay.edit-template-modal .input-sm {
-  width: 100%;
-  padding: 10px;
-  margin-bottom: 12px;
-  background: #222;
-  color: white;
-  border: 1px solid rgba(255,255,255,0.2);
-  border-radius: 8px;
-  font-size: 13px;
-}
-
-.modal-overlay.edit-template-modal .input-sm {
-  width: 140px;
-}
-
-.modal-overlay.edit-template-modal .textarea {
-  min-height: 80px;
-}
-
-/* Day 탭 */
-.modal-overlay.edit-template-modal .day-tabs {
-  display: flex;
-  gap: 10px;
-  margin: 20px 0;
-}
-
-.modal-overlay.edit-template-modal .day-tab {
-  padding: 10px 15px;
-  background: #222;
-  border-radius: 8px;
-  cursor: pointer;
-  border: none;
-}
-
-.modal-overlay.edit-template-modal .day-tab.active {
-  background: #e60023;
-}
-
-/* 운동 리스트 */
-.modal-overlay.edit-template-modal .exercise-section {
-  margin-top: 10px;
-}
-
-.modal-overlay.edit-template-modal .exercise-item {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 10px;
-  align-items: center;
-}
-
-.modal-overlay.edit-template-modal .add-btn {
-  margin-top: 10px;
-  padding: 10px;
-  background: #333;
-  border-radius: 6px;
-  border: none;
-  color: #fff;
-}
-
-.modal-overlay.edit-template-modal .delete-btn {
-  background: #b80000;
-  padding: 6px 10px;
-  border-radius: 6px;
-  border: none;
-  color: #fff;
-}
-
-/* 하단 버튼 */
-.modal-overlay.edit-template-modal .bottom-buttons {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 20px;
-}
-
-.modal-overlay.edit-template-modal .submit-btn {
-  padding: 10px 20px;
-  background: #e60023;
-  border-radius: 8px;
-  border: none;
-  color: #fff;
-}
-
-.modal-overlay.edit-template-modal .cancel-btn {
-  padding: 10px 20px;
-  background: #333;
-  border-radius: 8px;
-  border: none;
-  color: #fff;
+/* 작은 화면 대응 */
+@media (max-width: 920px) {
+  .modal-overlay.edit-template-modal .exercise-item {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
 }
 
 

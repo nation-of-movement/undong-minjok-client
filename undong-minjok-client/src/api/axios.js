@@ -139,12 +139,11 @@ export const templateApi = {
     });
   },
 
-  // 템플릿 수정
-  updateTemplate(id, formData) {
-    return api.patch(`/templates/${id}`, formData, {
-      headers: { "Content-Type": "multipart/form-data" }
-    });
+  // 템플릿 수정 (JSON)
+  updateTemplate(id, payload) {
+    return api.patch(`/templates/${id}`, payload);
   },
+
 
   // 템플릿 삭제
   deleteTemplate(id) {
