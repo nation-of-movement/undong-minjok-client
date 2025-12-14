@@ -6,7 +6,8 @@
 
         <!-- 2컬럼 레이아웃 -->
         <div class="modal-body-grid">
-          <!-- LEFT AREA (기본정보 + Day + 운동 목록)                   -->
+          <!-- LEFT AREA (기본정보 + Day + 운동 목록)
+          -->
           <div class="left-panel">
             <div class="section">
               <label>템플릿 제목</label>
