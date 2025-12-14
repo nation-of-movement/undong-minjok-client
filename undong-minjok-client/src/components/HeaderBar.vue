@@ -11,8 +11,6 @@ const auth = useAuthStore();
 
     <nav class="nav">
 
-      <RouterLink to="/">기록하러 가기</RouterLink>
-
       <template v-if="auth.user">
         <RouterLink to="/profile">내 정보</RouterLink>
 

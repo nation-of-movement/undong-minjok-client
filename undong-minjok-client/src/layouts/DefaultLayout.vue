@@ -20,14 +20,17 @@ import HeaderBar from "@/components/HeaderBar.vue";
 .layout {
   background: #000;
   min-height: 100vh;
+
+  display: flex;
+  flex-direction: column;
   color: #fff;
 }
 
 /* 고정 헤더 때문에 content 영역을 아래로 밀기 */
 .content {
+  flex: 1;
   padding: 40px 5%;
-  padding-top: 120px; /* 헤더 높이만큼 내려줌 */
-  min-height: calc(100vh - 160px);
+  padding-top: 120px;
 }
 
 /* footer는 자연스럽게 아래 따라오게 */
@@ -36,5 +39,6 @@ import HeaderBar from "@/components/HeaderBar.vue";
   text-align: center;
   font-size: 14px;
   opacity: 0.5;
+  flex-shrink: 0;
 }
 </style>

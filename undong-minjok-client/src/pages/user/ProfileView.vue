@@ -1,6 +1,6 @@
 <!-- src/views/MyPage.vue -->
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '@/stores/authStore'
 import { useRouter } from 'vue-router'
 
@@ -517,6 +517,10 @@ const openDeleteTemplateModal = async (templateId) => {
   }
 }
 
+const formattedAmount = computed(() => {
+  const amt = userInfo.value.amount ?? 0;
+  return amt.toLocaleString("ko-KR");
+});
 
 // 페이지 들어오면 둘 다 한 번씩 조회
 onMounted(() => {
@@ -593,7 +597,7 @@ onMounted(() => {
               </div>
               <div class="field">
                 <label>잔여 포인트</label>
-                <div class="readonly-box">{{ userInfo.amount }} P</div>
+                <div class="readonly-box">{{ formattedAmount }} P</div>
               </div>
               <div class="field">
                 <label>비밀번호</label>
