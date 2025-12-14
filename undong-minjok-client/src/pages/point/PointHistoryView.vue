@@ -34,6 +34,11 @@ const detailInfo = reactive({
   templateName: '',
 })
 
+const onInput = (e) => {
+  const value = e.target.value.replace(/[^0-9]/g, '');
+  withdrawInfo.amount = value ? Number(value) : 0;
+};
+
 function formatDate(dateString) {
   const date = new Date(dateString);
 
@@ -117,6 +122,7 @@ const withdraw = async () => {
 }
 
 const onWithdraw = () => {
+
   if (withdrawInfo.amount <= 0) {
     alert('출금 포인트를 입력해주세요.')
     return
@@ -299,11 +305,12 @@ const goPointHistoryDetail = async (pointId) => {
           </div>
         </div>
         <div class="card">
+
           <input
-            type="number"
+            type="text"
             class="input-large"
-            min="0"
-            v-model.number="withdrawInfo.amount"
+            :value="formatNumberWithCommas(withdrawInfo.amount)"
+            @input="onInput"
             placeholder="출금할 금액을 입력해주세요."
           />
           <div class="bottom-card">

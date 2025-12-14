@@ -1,7 +1,13 @@
 export const formatNumberWithCommas = (value) => {
-  if (value === null || value === undefined || isNaN(value)) {
-    return '0'; // 또는 value;
+  if (value === null || value === undefined || value === '') {
+    return '';
   }
 
-  return Number(value).toLocaleString('ko-KR');
+  const number = Number(
+    String(value).replace(/[^0-9]/g, '')
+  );
+
+  if (isNaN(number)) return '';
+
+  return number.toLocaleString('ko-KR');
 };
