@@ -327,8 +327,8 @@ const showEditTemplateModal = ref(false)
 const editingTemplateId = ref(null)
 
 // 부위 / 장비 데이터
-const parts = ref([])                     // /parts 에서 받아오는 목록
-const equipmentsMap = ref({})             // { [partCode]: [{id, name, ...}], ... }
+const parts = ref([])           // /parts 목록
+const equipmentsMap = ref({})   // { [partId]: [{id,name,...}], ... }
 
 // 부위 목록 로드
 const loadParts = async () => {
@@ -341,59 +341,39 @@ const loadParts = async () => {
 }
 
 // 특정 부위의 장비 목록 로드 (캐시)
-const loadEquipmentsForPart = async (partCode) => {
-  if (!partCode) return
-  if (equipmentsMap.value[partCode]) return  // 이미 있으면 재요청 X
+const loadEquipmentsForPart = async (partId) => {
+  if (!partId) return
+  if (equipmentsMap.value[partId]) return
 
   try {
-    const res = await equipmentApi.getEquipmentsByPart(partCode)
+    const res = await equipmentApi.getEquipmentsByPart(partId) // ✅ 서버가 Long part 받는 구조
     equipmentsMap.value = {
       ...equipmentsMap.value,
-      [partCode]: res.data.data || [],
+      [partId]: res.data.data || [],
     }
   } catch (e) {
     console.error('장비 목록 로드 실패', e)
   }
 }
 
-const openEditTemplateModal = async (templateId) => {
-  editingTemplateId.value = templateId
-
-  // 부위 먼저 로드
-  await loadParts()
-  // 템플릿 상세 로드해서 상태 채우기
-  await prepareEditModalData(templateId)
-
-  // 불러온 운동들 안에 들어있는 부위들에 대한 장비도 미리 로드
-  const partSet = new Set()
-  Object.values(editDayExercises.value).forEach((list) => {
-    list.forEach((ex) => {
-      if (ex.part) partSet.add(ex.part)
-    })
-  })
-  for (const p of partSet) {
-    await loadEquipmentsForPart(p)
-  }
-
-  showEditTemplateModal.value = true
-}
-
-// ================= 템플릿 수정 모달 상태 =================
+/* ================================
+ *  ✅ 수정 모달 내부 상태 (content/price/day/exercises)
+ * ================================ */
 const editContent = ref('')
 const editPrice = ref(0)
-
 const editCurrentDay = ref(1)
 
-// 7일 운동 배열
 const createEmptyDayMap = () => ({
   1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [],
 })
 
 const editDayExercises = ref(createEmptyDayMap())
 
-// 템플릿 상세 불러와서 모달에 채우기
+/**
+ * ✅ 템플릿 상세 불러와서 수정 모달에 채우기
+ * - 핵심: exerciseId / deleted / equipmentName까지 세팅
+ */
 const prepareEditModalData = async (templateId) => {
-  // 기본값 초기화
   editContent.value = ''
   editPrice.value = 0
   editCurrentDay.value = 1
@@ -406,94 +386,172 @@ const prepareEditModalData = async (templateId) => {
     editContent.value = t.content
     editPrice.value = t.price
 
-    if (t.days && Array.isArray(t.days)) {
-      const dayMap = createEmptyDayMap()
+    t.days?.forEach((dayDto) => {
+      const d = Number(dayDto.day)
 
-      t.days.forEach((dayDto) => {
-        const d = dayDto.day
-        if (!dayMap[d]) dayMap[d] = []
+      ;(dayDto.exercises || []).forEach((ex) => {
+        const equipmentId =
+          ex.equipmentId ?? ex.equipment?.id ?? ex.equipment?.equipmentId ?? null
 
-        ;(dayDto.exercises || []).forEach((ex, idx) => {
-          dayMap[d].push({
-            day: d,
-            name: ex.name || '',
-            part: ex.part || null,
-            reps: ex.reps ?? null,
-            weight: ex.weight ?? null,
-            duration: ex.duration ?? null,
-            orderIndex: ex.orderIndex ?? idx + 1,
-            equipmentId: ex.equipmentId ?? null,
-          })
+        const equipmentName =
+          ex.equipmentName ?? ex.equipment?.name ?? ex.equipment?.equipmentName ?? ''
+
+        editDayExercises.value[d].push({
+          exerciseId: ex.exerciseId ?? ex.id ?? null,
+          day: d,
+          name: ex.name ?? '',
+          part: ex.part ?? '',
+          reps: ex.reps ?? null,
+          weight: ex.weight ?? null,
+          duration: ex.duration ?? null,
+          orderIndex: ex.orderIndex ?? 0,
+          equipmentId,
+          equipmentName,       //  버튼에 바로 뜨는 값
+          deleted: false,
         })
       })
-
-      editDayExercises.value = dayMap
-    }
+    })
   } catch (e) {
     console.error('템플릿 상세 조회 실패', e)
   }
 }
 
-const closeEditTemplateModal = () => {
-  showEditTemplateModal.value = false
+
+/* ================================
+ *  ✅ 기구 선택 모달 (두번째 사진처럼)
+ * ================================ */
+const editModalOpen = ref(false)
+const editModalRowIndex = ref(null)
+
+const editSelectedPartId = ref(null)
+const editSelectedPartName = ref('')
+const editEquipmentList = ref([])
+
+const openEditPartModal = (rowIdx) => {
+  editModalRowIndex.value = rowIdx
+  editSelectedPartId.value = null
+  editSelectedPartName.value = ''
+  editEquipmentList.value = []
+  editModalOpen.value = true
 }
 
-// 운동 추가/삭제
+const closeEditPartModal = () => {
+  editModalOpen.value = false
+}
+
+const selectEditPart = async (part) => {
+  editSelectedPartId.value = part.id
+  editSelectedPartName.value = part.name
+
+  const partKey = part.id // ✅ 서버가 Long 받는 구조
+  await loadEquipmentsForPart(partKey)
+  editEquipmentList.value = equipmentsMap.value[partKey] || []
+}
+
+const resetEditPart = () => {
+  editSelectedPartId.value = null
+  editSelectedPartName.value = ''
+  editEquipmentList.value = []
+}
+
+/**
+ * ✅ 장비 선택 확정
+ * - 자유입력 부위(ex.part)는 절대 건드리지 않는다
+ */
+const selectEditEquipment = (eq) => {
+  const d = editCurrentDay.value
+  const row = editModalRowIndex.value
+  const ex = editDayExercises.value[d]?.[row]
+  if (!ex) return
+
+  ex.equipmentId = eq.id
+  ex.equipmentName = eq.name
+
+  editModalOpen.value = false
+}
+
+/* ================================
+ *  ✅ 수정 모달 open/close
+ * ================================ */
+const openEditTemplateModal = async (templateId) => {
+  editingTemplateId.value = templateId
+
+  await loadParts()
+  await prepareEditModalData(templateId)
+
+  showEditTemplateModal.value = true
+}
+
+const closeEditTemplateModal = () => {
+  showEditTemplateModal.value = false
+  editModalOpen.value = false
+}
+
+/* ================================
+ *  ✅ 운동 추가/삭제 (deleted 플래그 방식)
+ * ================================ */
 const addEditExercise = () => {
   const d = editCurrentDay.value
   if (!editDayExercises.value[d]) editDayExercises.value[d] = []
+
   editDayExercises.value[d].push({
+    exerciseId: null,   // ✅ 새 운동
     day: d,
     name: '',
-    part: null,
+    part: '',           // ✅ 자유입력
     reps: null,
     weight: null,
     duration: null,
     orderIndex: editDayExercises.value[d].length + 1,
     equipmentId: null,
+    equipmentName: '',
+    deleted: false,
   })
 }
 
-const removeEditExercise = (index) => {
-  const d = editCurrentDay.value
-  if (!editDayExercises.value[d]) return
-  editDayExercises.value[d].splice(index, 1)
+/**
+ * ✅ 삭제는 "숨김 + deleted=true" 로 처리
+ * - 백엔드가 deleted를 보면 remove 하도록 되어있음
+ */
+const removeEditExercise = (ex) => {
+  ex.deleted = true
 }
 
-// 부위 선택 변경시 장비 로드
-const handleEditExercisePartChange = async (ex) => {
-  if (!ex.part) {
-    ex.equipmentId = null
-    return
-  }
-  await loadEquipmentsForPart(ex.part)
-  ex.equipmentId = null
-}
-
-// 실제 수정 요청 (JSON PATCH)
+/* ================================
+ *  ✅ 실제 수정 요청
+ * ================================ */
 const submitEditTemplate = async () => {
   if (!editingTemplateId.value) return
 
   const exercises = []
+
   for (let d = 1; d <= 7; d++) {
     const list = editDayExercises.value[d] || []
+
+    // deleted=true도 같이 보내야 백엔드에서 삭제됨
     list.forEach((ex, idx) => {
       exercises.push({
-        ...ex,
+        exerciseId: ex.exerciseId,         // ✅ 기존 update / null이면 insert
         day: d,
+        name: ex.name,
+        part: ex.part,                     // ✅ 문자열
+        reps: ex.reps,
+        weight: ex.weight,
+        duration: ex.duration,
         orderIndex: idx + 1,
+        equipmentId: ex.equipmentId,
+        deleted: ex.deleted === true,
       })
     })
   }
 
-  const payload = {
-    content: editContent.value,
-    price: editPrice.value,
-    exercises,
-  }
-
   try {
-    await templateApi.updateTemplate(editingTemplateId.value, payload)
+    await templateApi.updateTemplate(editingTemplateId.value, {
+      content: editContent.value,
+      price: editPrice.value,
+      exercises,
+    })
+
     alert('템플릿이 수정되었습니다.')
     showEditTemplateModal.value = false
     fetchSales()
@@ -503,7 +561,9 @@ const submitEditTemplate = async () => {
   }
 }
 
-// 삭제 (간단 confirm)
+/* ================================
+ *  ✅ 삭제
+ * ================================ */
 const openDeleteTemplateModal = async (templateId) => {
   if (!confirm('정말 삭제하시겠습니까?')) return
 
@@ -521,6 +581,7 @@ const formattedAmount = computed(() => {
   const amt = userInfo.value.amount ?? 0;
   return amt.toLocaleString("ko-KR");
 });
+
 
 // 페이지 들어오면 둘 다 한 번씩 조회
 onMounted(() => {
@@ -804,11 +865,11 @@ onMounted(() => {
     <div class="modal-container">
       <div class="modal-header">
         <h2 class="modal-title">템플릿 수정하기</h2>
-        <button class="icon-close" @click="closeEditTemplateModal">✕</button>
+        <button type="button" class="icon-close" @click="closeEditTemplateModal">✕</button>
       </div>
 
       <div class="modal-body">
-        <!-- 설명 -->
+        <!-- 설명/가격 -->
         <div class="section">
           <label>설명</label>
           <textarea
@@ -832,6 +893,7 @@ onMounted(() => {
           <button
             v-for="d in 7"
             :key="d"
+            type="button"
             :class="['day-tab', { active: editCurrentDay === d }]"
             @click="editCurrentDay = d"
           >
@@ -839,57 +901,89 @@ onMounted(() => {
           </button>
         </div>
 
-        <!-- 운동 입력 UI -->
+        <!-- 운동 입력 UI (등록 모달 느낌) -->
         <div class="exercise-section">
           <div class="exercise-head">
             <h3>Day {{ editCurrentDay }} 운동 목록</h3>
-            <button class="add-btn" @click="addEditExercise">+ 운동 추가</button>
+            <button type="button" class="add-btn" @click="addEditExercise">+ 운동 추가</button>
           </div>
 
           <div
             v-for="(ex, idx) in editDayExercises[editCurrentDay]"
             :key="idx"
-            class="exercise-item"
+            class="exercise-item exercise-item--create"
+            v-show="!ex.deleted"
           >
             <input v-model="ex.name" class="input-sm" placeholder="운동명" />
-
-            <select
-              v-model="ex.part"
-              class="input-sm"
-              @change="handleEditExercisePartChange(ex)"
-            >
-              <option :value="null">부위 선택</option>
-              <option v-for="part in parts" :key="part.id" :value="part.code">
-                {{ part.name }}
-              </option>
-            </select>
-
-            <select v-model="ex.equipmentId" class="input-sm">
-              <option :value="null">장비 없음</option>
-              <option v-for="eq in (equipmentsMap[ex.part] || [])" :key="eq.id" :value="eq.id">
-                {{ eq.name }}
-              </option>
-            </select>
-
             <input v-model.number="ex.reps" class="input-sm" type="number" placeholder="횟수" />
-            <input v-model.number="ex.weight" class="input-sm" type="number" placeholder="kg" />
-            <input v-model.number="ex.duration" class="input-sm" type="number" placeholder="sec" />
+            <input v-model.number="ex.weight" class="input-sm" type="number" placeholder="무게(kg)" />
+            <input v-model.number="ex.duration" class="input-sm" type="number" placeholder="시간(sec)" />
 
-            <button class="delete-btn" @click="removeEditExercise(idx)">삭제</button>
+            <!-- ✅ 자유입력 부위 -->
+            <input v-model="ex.part" class="input-sm" type="text" placeholder="부위 입력 (예: 가슴, 등, 하체)" />
+
+            <!-- ✅ 두번째 사진처럼 모달로 기구 선택 -->
+            <button type="button" class="input-sm" @click="openEditPartModal(idx)">
+              {{ ex.equipmentName ? ex.equipmentName : '기구 선택' }}
+            </button>
+
+            <button type="button" class="delete-btn" @click="removeEditExercise(ex)">삭제</button>
           </div>
 
-          <div v-if="!(editDayExercises[editCurrentDay] || []).length" class="empty-ex">
+
+          <div v-if="!(editDayExercises[editCurrentDay] || []).some(e => !e.deleted)" class="empty-ex">
             운동이 없습니다. “+ 운동 추가”로 추가하세요.
           </div>
         </div>
+        <div class="modal-footer">
+          <button type="button" class="cancel-btn" @click="closeEditTemplateModal">닫기</button>
+          <button type="button" class="submit-btn" @click="submitEditTemplate">수정하기</button>
+        </div>
+      </div>
       </div>
 
-      <div class="modal-footer">
-        <button class="cancel-btn" @click="closeEditTemplateModal">닫기</button>
-        <button class="submit-btn" @click="submitEditTemplate">수정하기</button>
+
+
+      <!-- ====== 수정 모달용 '기구 선택' 모달 ====== -->
+      <div class="edit-pick-modal-bg" v-if="editModalOpen" @click.self="closeEditPartModal">
+        <div class="edit-pick-modal">
+          <div v-if="!editSelectedPartId">
+            <div class="edit-pick-title">운동 부위를 선택해주세요</div>
+
+            <button
+              type="button"
+              class="edit-pick-item"
+              v-for="p in parts"
+              :key="p.id"
+              @click="selectEditPart(p)"
+            >
+              {{ p.name }}
+            </button>
+          </div>
+
+          <div v-else>
+            <div class="edit-pick-title">
+              {{ editSelectedPartName }} 관련 운동기구
+              <button type="button" class="edit-pick-back" @click="resetEditPart">← 뒤로</button>
+            </div>
+
+            <button
+              type="button"
+              class="edit-pick-item"
+              v-for="eq in editEquipmentList"
+              :key="eq.id"
+              @click="selectEditEquipment(eq)"
+            >
+              {{ eq.name }}
+            </button>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
+      </div>
+
+
+
+
 
 
 </template>
@@ -1609,6 +1703,61 @@ onMounted(() => {
   .modal-overlay.edit-template-modal .exercise-item {
     grid-template-columns: 1fr 1fr 1fr;
   }
+}
+
+/* ================= 수정 모달 내부 '기구 선택' 모달 (두번째 사진 스타일) ================= */
+.edit-pick-modal-bg {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 4000;
+}
+
+.edit-pick-modal {
+  width: 420px;
+  max-height: 75vh;
+  overflow-y: auto;
+  background: #fff;
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+}
+
+.edit-pick-title {
+  font-size: 16px;
+  font-weight: 800;
+  margin-bottom: 12px;
+  color: #111;
+}
+
+.edit-pick-item {
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #e3e3e3;
+  background: #f7f7f7;
+  margin-bottom: 10px;
+  cursor: pointer;
+  color: #111;
+}
+
+.edit-pick-item:hover {
+  background: #e60023;
+  border-color: #e60023;
+  color: #fff;
+}
+
+.edit-pick-back {
+  float: right;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  color: #666;
 }
 
 
