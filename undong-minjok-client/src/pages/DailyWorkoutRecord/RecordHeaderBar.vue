@@ -35,7 +35,7 @@ const router = useRouter();
 
 const goHome = () => router.push("/");
 const goBack = () => router.back();
-const goMyPage = () => router.push("/mypage");
+const goMyPage = () => router.push("/profile");
 
 // 🔥 추천 기능: 알림 페이지(없으면 라우터만 만들어두면 됨)
 const goNotifications = () => router.push("/notifications");
