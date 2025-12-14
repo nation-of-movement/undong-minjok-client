@@ -128,6 +128,7 @@ async function requestPayment() {
   }
 
   const orderId = generateRandomString()
+  const baseUrl = window.location.origin;
 
   let payload = {
     orderId: orderId,
@@ -146,8 +147,8 @@ async function requestPayment() {
       orderName: `포인트 충전 ${amount.value}원`,
       customerName: '' ,
       customerEmail: '',
-      successUrl: "http://localhost:5173" + '/success',
-      failUrl: "http://localhost:5173" + '/fail',
+      successUrl: `${baseUrl}/success`,
+      failUrl: `${baseUrl}/fail`,
     })
   } catch (err) {
     console.error('결제 요청 실패:', err)
