@@ -132,7 +132,7 @@
     <CreateTemplateModal
       v-if="showCreateModal"
       @close="showCreateModal = false"
-      @created="onTemplateCreated"
+      @success="onTemplateCreated"
     />
 
   </div>
