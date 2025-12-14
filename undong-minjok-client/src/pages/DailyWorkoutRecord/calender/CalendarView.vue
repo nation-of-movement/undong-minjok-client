@@ -1,23 +1,24 @@
 <template>
-  <RecordHeaderBar/>
+  <RecordHeaderBar />
 
   <div class="page">
-    <h2 class="title floating-title">오늘도 오운완 챌린지 성공해볼까요?</h2>
+    <h2 class="title floating-title">
+      오늘도 오운완 챌린지 성공해볼까요?
+    </h2>
 
     <div class="container">
-
       <!-- 달력 영역 -->
       <div class="calendar-box card">
         <div class="month-title">{{ year }}년 {{ month }}월</div>
 
-        <!-- 요일 표시 -->
+        <!-- 요일 -->
         <div class="weekday-row">
           <div class="weekday" v-for="w in weekdays" :key="w">
             {{ w }}
           </div>
         </div>
 
-        <!-- 날짜 표시 -->
+        <!-- 날짜 -->
         <div class="calendar-grid">
           <div
             class="day"
@@ -29,48 +30,53 @@
           >
             <div class="day-date">{{ day }}</div>
 
-            <!-- 날짜별 저장된 운동 사진 -->
-            <img v-if="photos[day]" :src="photos[day]" class="day-photo" />
+            <img
+              v-if="photos[day]"
+              :src="photos[day]"
+              class="day-photo"
+            />
           </div>
         </div>
       </div>
 
-      <!-- 템플릿 저장소 -->
+      <!-- 템플릿 보관함 -->
       <div class="template-box card">
         <h3 class="section-title">템플릿 보관함</h3>
-        <p class="subtitle">날짜를 선택한 후 템플릿을 적용할 수 있습니다.</p>
+        <p class="subtitle">
+          날짜를 선택한 후 템플릿을 적용할 수 있습니다.
+        </p>
 
         <div
           v-for="tpl in templateList"
           :key="tpl.templateId"
           class="template-card"
         >
-          <!-- 템플릿 대표 이미지 -->
           <img
             v-if="tpl.imgPath"
-            :src="`http://localhost:8888/uploads/${tpl.imgPath}`"
+            :src="`${IMAGE_BASE_URL}${tpl.imgPath}`"
             class="template-thumbnail"
           />
 
-          <!-- 템플릿명 -->
           <div class="template-title">{{ tpl.templateName }}</div>
 
-          <!-- 작성자 정보 -->
           <div class="template-meta">
             작성자: {{ tpl.creatorNickname ?? '익명' }}
           </div>
 
-          <!-- 템플릿 적용 -->
-          <button class="apply-btn" @click="applyTemplate(tpl.templateId)">
+          <button
+            class="apply-btn"
+            @click="applyTemplate(tpl.templateId)"
+          >
             적용하기
           </button>
 
-          <!-- 템플릿 삭제 -->
-          <button class="delete-btn" @click="deleteTemplate(tpl.templateId)">
+          <button
+            class="delete-btn"
+            @click="deleteTemplate(tpl.templateId)"
+          >
             삭제하기
           </button>
         </div>
-
       </div>
     </div>
   </div>
@@ -82,22 +88,25 @@ import RecordHeaderBar from '@/pages/DailyWorkoutRecord/RecordHeaderBar.vue'
 import dailyWorkoutRecordApi from '@/api/dailyWorkoutRecordApi.js'
 import templateStorageApi from '@/api/templateStorageApi.js'
 
+const IMAGE_BASE_URL = import.meta.env.VITE_IMG_BASE_URL;
+
 export default {
-  name: "CalendarPage",
+  name: 'CalendarPage',
   components: { RecordHeaderBar },
 
   props: {
     year: String,
-    month: String
+    month: String,
   },
 
   data() {
     return {
+      IMAGE_BASE_URL,
       selectedDay: null,
       days: [],
       weekdays: ['월', '화', '수', '목', '금', '토', '일'],
       templateList: [],
-      photos: {}
+      photos: {},
     };
   },
 
@@ -111,75 +120,76 @@ export default {
   },
 
   methods: {
-
-    //현재 월의 날짜 리스트 생성
+    // 현재 월 날짜 생성
     generateDays() {
-      const lastDay = new Date(this.year, this.month, 0).getDate()
-      this.days = Array.from({ length: lastDay }, (_, i) => i + 1)
+      const lastDay = new Date(this.year, this.month, 0).getDate();
+      this.days = Array.from({ length: lastDay }, (_, i) => i + 1);
     },
 
-    //해당월 운동 사진 목록 조회
+    // 월별 운동 사진 조회
     async loadPhotos() {
-      const res = await dailyWorkoutRecordApi.getMonthlyPhotos(this.year, this.month)
-      const list = res.data.data ?? res.data
+      const res = await dailyWorkoutRecordApi.getMonthlyPhotos(
+        this.year,
+        this.month
+      );
 
-      this.photos = {}
+      const list = res.data.data ?? res.data;
+      this.photos = {};
 
       list.forEach(item => {
-        this.photos[item.day] = `http://localhost:8888/uploads/${item.workoutImg}`
-      })
+        this.photos[item.day] =
+          `${this.IMAGE_BASE_URL}${item.workoutImg}`;
+      });
     },
 
-    //날짜 클릭했을 때 선택 상태 업데이트
+    // 날짜 선택
     selectDay(day) {
-      this.selectedDay = day
+      this.selectedDay = day;
     },
 
-    // 날짜 더블 클릭
+    // 날짜 더블 클릭 → 기록 페이지
     goRecordPage(day) {
-      const date = `${this.year}-${String(this.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+      const date = `${this.year}-${String(this.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
 
       this.$router.push({
         name: 'Record',
         query: { date },
-      })
+      });
     },
 
-    //템플릿 보관함 목록 조회
+    // 템플릿 보관함 조회
     async loadTemplates() {
-      const res = await templateStorageApi.getStorageList()
-      this.templateList = res.data.data ?? res.data
+      const res = await templateStorageApi.getStorageList();
+      this.templateList = res.data.data ?? res.data;
     },
 
-    //템플릿 적용
+    // 템플릿 적용
     async applyTemplate(templateId) {
       if (!this.selectedDay) {
-        alert("먼저 날짜를 선택해주세요.")
-        return
+        alert('먼저 날짜를 선택해주세요.');
+        return;
       }
 
-      const date = `${this.year}-${String(this.month).padStart(2, '0')}-${String(this.selectedDay).padStart(2, '0')}`
+      const date = `${this.year}-${String(this.month).padStart(2, '0')}-${String(this.selectedDay).padStart(2, '0')}`;
 
-      await templateStorageApi.applyTemplate(templateId, date)
-
-      alert(`템플릿이 ${date}에 적용되었습니다.`)
+      await templateStorageApi.applyTemplate(templateId, date);
+      alert(`템플릿이 ${date}에 적용되었습니다.`);
     },
 
-    //템플릿 삭제
+    // 템플릿 삭제
     async deleteTemplate(templateId) {
-      const confirmDelete = confirm("정말 삭제하시겠습니까?")
-      if (!confirmDelete) return
+      if (!confirm('정말 삭제하시겠습니까?')) return;
 
-      await templateStorageApi.deleteFromStorage(templateId)
+      await templateStorageApi.deleteFromStorage(templateId);
+      this.templateList =
+        this.templateList.filter(t => t.templateId !== templateId);
 
-      // 화면에서 즉시 제거
-      this.templateList = this.templateList.filter(t => t.templateId !== templateId)
-
-      alert("삭제되었습니다.")
+      alert('삭제되었습니다.');
     },
-  }
-}
+  },
+};
 </script>
+
 
 <style scoped>
 .page {
