@@ -1,7 +1,7 @@
 export const POINT_STATS_TAG = {
   RECHARGE : { type: 'recharge',label: '충전완료', contents : '포인트 충전'}
   , PURCHASE : { type: 'purchase',label: '구매완료', contents : '템플릿 구매'}
-  , EARN : { type: 'earn',label: '적립완료', contents : '템플릿 판매'}
+  , EARN : { type: 'earn',label: '판매완료', contents : '템플릿 판매'}
   , WITHDRAW_WAIT : { type: 'withdraw-wait',label: '출금 대기중', contents: '포인트 출금'}
   , WITHDRAW : { type: 'withdraw',label: '출금완료' , contents: '포인트 출금'}
 }

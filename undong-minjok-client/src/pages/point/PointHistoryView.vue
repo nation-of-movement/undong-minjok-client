@@ -3,6 +3,7 @@ import { onMounted, reactive, readonly, ref, watch } from 'vue'
 import { fetchPointHistory, fetchPointHistoryDetail, withdrawApi } from '@/api/pointApi.js'
 import { POINT_STATS_TAG, KOREA_BANK_LIST , PAYMENT_METHOD} from '@/pages/point/pointTag.js'
 import './pointTagCss.css'
+import {formatNumberWithCommas} from './util.js'
 const pointHistory = ref([]) // 포인트 히스토리 내역
 const pointStatus = ref([]) // 포인트 상태 리스트
 const selectStatus = ref('') // 구분 값 (select)
@@ -10,6 +11,7 @@ const _totalPoint = ref(0)
 const totalPoint = readonly(_totalPoint)
 const _sellingPoint = ref(0)
 const sellingPoint = readonly(_sellingPoint)
+
 // 모달
 const detailLabel = ref('포인트')
 const detailUnit = ref('P')
@@ -76,13 +78,7 @@ const closeModal = () => {
 
 }
 
-const formatNumberWithCommas = (value) => {
-  if (value === null || value === undefined || isNaN(value)) {
-    return '0'; // 또는 value;
-  }
 
-  return Number(value).toLocaleString('ko-KR');
-};
 const loadPointHistory = async (status) => {
   try {
     const response = await fetchPointHistory(status)

@@ -39,6 +39,7 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { paymentsPrepareApi } from '../../api/paymentsApi.js'
 import { useRouter } from 'vue-router'
+import {formatNumberWithCommas} from './util.js'
 
 // Toss 클라이언트 키
 const clientKey = 'test_ck_LlDJaYngroa7b9vy92zm3ezGdRpX'
@@ -93,9 +94,18 @@ function generateRandomString() {
 
 // 금액 버튼
 const addAmount = (price) => {
-  if (price <= 0) amount.value = 0
-  else amount.value += price
+  let maxPrice = 10000;
+
+  if (price <= 0) {
+    amount.value = 0
+  } else if (price > maxPrice) {
+    alert(`충전 최대 ${formatNumberWithCommas(maxPrice)}금액은 원입니다.`);
+  } else {
+  amount.value += price
+  }
 }
+
+
 
 // SDK 로드
 onMounted(async () => {
@@ -129,6 +139,7 @@ async function requestPayment() {
 
   const orderId = generateRandomString()
   const baseUrl = window.location.origin;
+
 
   let payload = {
     orderId: orderId,
