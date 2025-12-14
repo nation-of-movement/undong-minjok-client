@@ -4,10 +4,10 @@
       <h3 class="title">충전하기</h3>
       <div class="card">
         <input
-          type="number"
+          type="text"
           class="input-large"
-          min="100"
-          v-model.number="amount"
+          :value="formatNumberWithCommas(amount)"
+          @input="onInput"
           placeholder="충전할 금액을 입력해주세요."
         />
         <div class="btn-card">
@@ -39,7 +39,8 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { paymentsPrepareApi } from '../../api/paymentsApi.js'
 import { useRouter } from 'vue-router'
-
+import {formatNumberWithCommas} from './util.js'
+const maxPrice = 10000;
 // Toss 클라이언트 키
 const clientKey = 'test_ck_LlDJaYngroa7b9vy92zm3ezGdRpX'
 const router = useRouter()
@@ -93,8 +94,12 @@ function generateRandomString() {
 
 // 금액 버튼
 const addAmount = (price) => {
-  if (price <= 0) amount.value = 0
-  else amount.value += price
+  if (price <= 0) {
+    amount.value = 0
+  }  else {
+    amount.value += price
+  }
+
 }
 
 // SDK 로드
@@ -113,9 +118,15 @@ const ready = computed(() => paymentReady.value)
 
 // 결제 버튼 클릭 시
 function checkAmount() {
+console.log(amount.value);
+
   if (amount.value < 100) {
     alert("100원이상 결제해주세요.")
     return
+  } else if (amount.value > maxPrice) {
+    alert(`충전 최대 금액은 ${maxPrice.toLocaleString()}원입니다.`);
+    amount.value = maxPrice;
+    return;
   }
   requestPayment()
 }
@@ -129,6 +140,7 @@ async function requestPayment() {
 
   const orderId = generateRandomString()
   const baseUrl = window.location.origin;
+
 
   let payload = {
     orderId: orderId,
@@ -155,6 +167,18 @@ async function requestPayment() {
     await router.push('/')
   }
 }
+const onInput = (e) => {
+  const value = e.target.value.replace(/[^0-9]/g, '');
+  amount.value = value ? Number(value) : 0;
+};
+watch(amount, (newVal, oldVal) => {
+  if (newVal > maxPrice) {
+    alert(`충전 최대 금액은 ${maxPrice.toLocaleString()}원입니다.`);
+    amount.value = maxPrice;
+  }
+});
+
+
 </script>
 
 <style scoped>
