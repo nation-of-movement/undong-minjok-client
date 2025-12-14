@@ -39,11 +39,11 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { paymentsPrepareApi } from '../../api/paymentsApi.js'
 import { useRouter } from 'vue-router'
-import HeaderBar from '@/components/HeaderBar.vue'
 
 // Toss 클라이언트 키
 const clientKey = 'test_ck_LlDJaYngroa7b9vy92zm3ezGdRpX'
 const router = useRouter()
+
 // 상태 변수
 const amount = ref(0)
 const paymentReady = ref(false)
@@ -144,10 +144,10 @@ async function requestPayment() {
       amount: amount.value,
       orderId,
       orderName: `포인트 충전 ${amount.value}원`,
-      customerName: '김토스',
-      customerEmail: 'lala19873@naver.com',
-      successUrl: window.location.origin + '/success',
-      failUrl: window.location.origin + '/fail',
+      customerName: '' ,
+      customerEmail: '',
+      successUrl: "http://localhost:5173" + '/success',
+      failUrl: "http://localhost:5173" + '/fail',
     })
   } catch (err) {
     console.error('결제 요청 실패:', err)
