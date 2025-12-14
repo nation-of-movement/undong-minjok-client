@@ -180,7 +180,9 @@ export default {
         this.template.id = d.id
         this.template.title = d.name
         this.template.description = d.content
-        this.template.thumbnail = this.BASE_URL + d.thumbnailImage
+        this.template.thumbnail = d.templateImage
+          ? this.BASE_URL + d.templateImage
+          : this.BASE_URL + d.thumbnailImage
         this.template.creator = d.writerNickname
         this.template.bio = d.userProfile?.bio || ''
 
