@@ -5,7 +5,7 @@ import { paymentsConfirmApi } from '@/api/paymentsApi.js'
 
 const router = useRouter();
 const route = useRoute();
-const pageType = ref('fail')
+const pageType = ref('loading')
 const orderId = route.query.orderId;  // 주문 id
 const paymentKey = route.query.paymentKey; // key
 const amount = route.query.amount; // 그액
@@ -84,8 +84,13 @@ onMounted(async () => {
           <h3>결제 실패했습니다.</h3>
         </div>
       </div>
+      <div v-else-if="pageType == 'loading'">
+        <div class="block-loading">
+            <img src="../../assets/icon/loading.gif" alt="loading"  width="50px"/>
+        </div>
+      </div>
 
-      <div class="block-btn">
+      <div class="block-btn" v-if="pageType != 'loading'">
         <button @click="closeBtn" class="closeBtn">확인</button>
       </div>
     </div>
@@ -95,13 +100,12 @@ onMounted(async () => {
 <style scoped>
 
 .container {
-  .container {
-    width: 800px;
-    margin: auto;
-  }
+  width: 800px;
+  margin: auto;
 }
 
 .block {
+  position: relative;
   background: #0a0a0a;
   width: 800px;
   height: 500px;
@@ -154,7 +158,15 @@ onMounted(async () => {
   cursor: pointer;
 }
 
-
+.block-loading {
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0.7;
+  position: absolute;
+  inset: 0
+}
 
 
 
