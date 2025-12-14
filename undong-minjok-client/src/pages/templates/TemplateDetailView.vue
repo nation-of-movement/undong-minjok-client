@@ -272,15 +272,18 @@ export default {
 /* --------------- 기존 CSS 그대로 유지 --------------- */
 
 .detail-page {
-  padding: 40px 5% 40px;
+  padding-top: 60px;
+  padding-left: 5%;
+  padding-right: 5%;
+  padding-bottom: 40px;
   color: white;
 }
-
 .top-section {
   display: grid;
   grid-template-columns: 1fr 2fr;
   gap: 40px;
   min-height: 50vh;
+  padding-top: 40px;
 }
 
 .top-left {
@@ -311,7 +314,6 @@ export default {
   margin-top: 6px;
 }
 
-/* ❤️ like-row */
 .like-row {
   display: flex;
   align-items: center;
@@ -338,16 +340,16 @@ export default {
 
 .top-right {
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
 }
 
 .template-img {
-  width: 90%;
-  max-height: 50vh;
+  max-width: 100%;
+  width: 100%;
+  height: auto;
+  max-height: 70vh;
   object-fit: contain;
-  border-radius: 14px;
-  background: #000;
 }
 
 .bottom-section {
