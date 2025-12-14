@@ -335,14 +335,14 @@ export default {
 
 .page-title{
   margin-left: 10px;
-  font-size: 36px;
+  font-size: 25px;
   font-weight: 700;
   color: #ffffff;
 }
 
 /* ==== 제목 ==== */
 h1 {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 700;
   color: #222;
   margin-bottom: 22px;
@@ -458,7 +458,7 @@ td input:focus {
 
 .preview {
   width: 100%;
-  height: 600px;
+  height: 430px;
   border-radius: 12px;
   border: 2px dashed #bbb;
   background: #f8f8f8;
