@@ -12,7 +12,9 @@
           <img class="profile-img" :src="template.sellerProfileImg" />
           <div class="seller-info">
             <h2>{{ template.creator }}</h2>
-            <p class="seller-name">{{ template.awards }}</p>
+            <p class="seller-name" v-if="template.bio">
+              {{ template.bio }}
+            </p>
           </div>
 
           <!-- 추천 하트 + 카운트 -->
@@ -136,7 +138,7 @@ export default {
         title: '',
         creator: '',
         sellerProfileImg: '',
-        awards: 'IFBB 아마추어 1위 · 국내 챔피언십 TOP3 · 10년 경력 PT 전문가',
+        bio: '',
         price: 0,
         likes: 0,
         salesCount: 0,
@@ -180,6 +182,7 @@ export default {
         this.template.description = d.content
         this.template.thumbnail = this.BASE_URL + d.thumbnailImage
         this.template.creator = d.writerNickname
+        this.template.bio = d.userProfile?.bio || ''
 
         this.template.isMine = d.isMine
         this.template.price = d.price
@@ -189,6 +192,10 @@ export default {
         this.template.level = d.level || ''
 
         this.template.date = d.createdAt?.split('T')[0] || this.template.date
+
+        this.template.sellerProfileImg = d.userProfile?.profileImagePath
+          ? this.BASE_URL + d.userProfile.profileImagePath
+          : '/default-profile.png'
 
         // 추천 정보 세팅
         this.likeCount = d.recommendCount || 0
@@ -273,7 +280,7 @@ export default {
   display: grid;
   grid-template-columns: 1fr 2fr;
   gap: 40px;
-  height: 50vh;
+  min-height: 50vh;
 }
 
 .top-left {
@@ -338,8 +345,9 @@ export default {
 .template-img {
   width: 90%;
   max-height: 50vh;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: 14px;
+  background: #000;
 }
 
 .bottom-section {
