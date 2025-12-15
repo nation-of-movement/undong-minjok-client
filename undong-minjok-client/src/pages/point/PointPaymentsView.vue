@@ -51,7 +51,8 @@ const amount = ref(0)
 const paymentReady = ref(false)
 const tossPaymentsInstance = ref(null)
 const closePayment = () => {
-  router.push('/')
+  router.push({ path: `${fromPath}` });
+  localStorage.removeItem('fromPath');
 }
 
 // Toss SDK 로더 (수정된 완전 버전)
