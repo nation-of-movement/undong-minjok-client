@@ -5,15 +5,16 @@ const auth = useAuthStore();
 
 <template>
   <header class="header">
-    <div class="logo">운동의 민족</div>
+    <RouterLink to="/" class="logo">
+      운동의 민족
+    </RouterLink>
 
     <nav class="nav">
-      <RouterLink to="/">홈</RouterLink>
-      <RouterLink to="/community">커뮤니티</RouterLink>
-      <RouterLink to="/challenge">챌린지</RouterLink>
+
       <template v-if="auth.user">
         <RouterLink to="/profile">내 정보</RouterLink>
-        <button @click="auth.logout" class="btn-red">로그아웃</button>
+
+        <button @click="auth.logout" class="btn-red logout-btn">로그아웃</button>
       </template>
 
       <template v-else>
@@ -24,6 +25,15 @@ const auth = useAuthStore();
 </template>
 
 <style scoped>
+.nav {
+  display: flex;
+  align-items: center;
+}
+
+.logout-btn {
+  margin-left: 20px; /* 숫자 조절 가능 */
+}
+
 .header {
   position: fixed;
   top: 0;
@@ -46,15 +56,11 @@ const auth = useAuthStore();
   font-size: 22px;
   font-weight: 700;
   color: #fff;
-}
-
-.nav {
-  display: flex;
-  align-items: center;
-  gap: 20px;
+  text-decoration: none;
 }
 
 .nav a {
+  margin-left: 25px;
   text-decoration: none;
   color: #fff;
   font-weight: 400;
@@ -65,16 +71,5 @@ const auth = useAuthStore();
   background: #E60023;
   border-radius: 6px;
   font-weight: 600;
-  color: #fff;
-  border: none;
-  cursor: pointer;
-  transition: 0.2s;
-  display: inline-block;
 }
-
-.btn-red:hover {
-  background: #ff0033;
-  transform: translateY(-1px);
-}
-
 </style>

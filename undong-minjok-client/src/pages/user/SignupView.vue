@@ -49,7 +49,7 @@
               type="button"
               @click="sendCode"
               class="btn-sub"
-              :disabled="emailVerify.sending || emailVerify.emailVerified"
+              :disabled="!emailValid || emailVerify.sending || emailVerify.emailVerified"
             >
               {{ emailVerify.emailVerified
               ? "인증완료"
@@ -61,6 +61,7 @@
               }}
             </button>
           </div>
+          <p v-if="email && !emailValid" class="error">올바른 이메일 형식이 아닙니다.</p>
 
           <!-- 인증번호 입력 -->
           <div v-if="emailVerify.codeSent" class="verify-section">
@@ -87,8 +88,9 @@
               </button>
             </div>
 
-            <p class="timer">⏳ {{ emailVerify.timer }}초 남음</p>
-
+            <p class="timer" v-if="!emailVerify.emailVerified">
+              ⏳ {{ emailVerify.timer }}초 남음
+            </p>
             <p v-if="emailVerify.emailVerified" class="success">✔ 이메일 인증 완료!</p>
             <p v-if="emailVerify.verifyFail && !emailVerify.emailVerified" class="error">
               인증 실패 또는 만료되었습니다.
@@ -131,6 +133,9 @@ const code = ref("");
 
 const idExists = ref(false);
 const nickExists = ref(false);
+
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const emailValid = computed(() => emailRegex.test(email.value));
 
 // 아이디 중복 검사
 const validateLoginId = async () => {

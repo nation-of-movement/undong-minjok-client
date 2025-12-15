@@ -24,3 +24,8 @@ export const uploadProfileImageApi = (file) => {
 export const deleteUserApi = () => {
   return api.delete('/users')
 }
+
+export const resetPasswordApi = (data) => {
+  return api.post("/users/reset-password", data).then(res => res.data);
+};
+

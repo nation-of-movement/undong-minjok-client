@@ -9,8 +9,15 @@ export const usePasswordSearchStore = defineStore('passwordSearch', () => {
   const verifyFail = ref(false);
   const timer = ref(0);
   const resetToken = ref(null);
+  const purpose = ref("PASSWORD_SEARCH");
+  const code = ref("");
 
   let timerInterval = null;
+
+  const startFlow = (p) => {
+    purpose.value = p;
+    reset();
+  };
 
   /* -------------------------
    * 초기화 (페이지 진입 시 호출)
@@ -54,7 +61,7 @@ export const usePasswordSearchStore = defineStore('passwordSearch', () => {
     try {
       await sendEmailCodeApi({
         email,
-        purpose: "PASSWORD_SEARCH",
+        purpose: purpose.value,
       });
 
       codeSent.value = true;
@@ -78,7 +85,7 @@ export const usePasswordSearchStore = defineStore('passwordSearch', () => {
       const res = await verifyEmailCodeApi({
         email,
         code,
-        purpose: "PASSWORD_SEARCH",
+        purpose: purpose.value,
       });
 
       const success = res.data?.data?.success;
@@ -113,6 +120,7 @@ export const usePasswordSearchStore = defineStore('passwordSearch', () => {
     timer,
     resetToken,
 
+    startFlow,
     sendCode,
     verifyCode,
     reset,

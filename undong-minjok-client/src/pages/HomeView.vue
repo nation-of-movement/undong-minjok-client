@@ -8,15 +8,11 @@
         <p>오늘의 운동을 기록하러 가보세요!</p>
       </div>
 
-      <div class="feature-card">
-        <h3>🔥 챌린지 참여</h3>
-        <p>운동 기록하고 랭킹에 도전하세요.</p>
+      <div class="feature-card"  @click="goToCharge">
+        <h3>💳 충전하기</h3>
+        <p>프리미엄 기능을 지금 바로 이용해보세요.</p>
       </div>
 
-      <div class="feature-card">
-        <h3>💬 커뮤니티</h3>
-        <p>운동하는 사람들과 실시간으로 소통하세요.</p>
-      </div>
     </section>
 
     <!-- HERO — 로그인 안하면 출력 -->
@@ -33,28 +29,50 @@
         <p>인기 있는 운동 루틴 템플릿을 한 곳에서 보고, 내 기록장에 바로 적용해보세요.</p>
       </div>
 
-      <button class="cta-sell-btn">템플릿 판매 시작하기 ➜</button>
+      <button class="cta-sell-btn" @click="openCreateModal">
+        템플릿 등록하기 ➜
+      </button>
     </div>
 
-    <!-- TABS -->
-    <div class="tabs-row">
+    <!-- ⭐ 검색바 + 정렬 탭 같은 라인 -->
+    <div class="search-sort-row">
+      <!-- 검색바 -->
+      <input
+        class="search-input"
+        v-model="search"
+        @input="fetchTemplates"
+        placeholder="템플릿을 검색해주세요"
+      />
+
+      <!-- 정렬 탭 -->
       <div class="tabs">
-        <div class="tab active">🔥 인기</div>
-        <div class="tab">🆕 최신</div>
-        <div class="tab">💪 상체</div>
-        <div class="tab">🦵 하체</div>
-        <div class="tab">⚡ 전신</div>
-      </div>
+        <div
+          class="tab"
+          :class="{ active: sort === 'RECOMMEND' }"
+          @click="changeSort('RECOMMEND')"
+        >
+          🔥 추천순
+        </div>
 
-      <div class="filters">
-        <div class="chip highlight">무료만 보기</div>
-        <div class="chip">초보자용</div>
-        <div class="chip">헬스장</div>
-        <div class="chip">홈트</div>
+        <div
+          class="tab"
+          :class="{ active: sort === 'LATEST' }"
+          @click="changeSort('LATEST')"
+        >
+          🆕 등록순
+        </div>
+
+        <div
+          class="tab"
+          :class="{ active: sort === 'SALES' }"
+          @click="changeSort('SALES')"
+        >
+          💪 판매순
+        </div>
       </div>
     </div>
 
-    <!-- TEMPLATE GRID (3x2 per page) -->
+    <!-- TEMPLATE GRID -->
     <section class="grid">
       <article
         class="card-template"
@@ -63,22 +81,20 @@
         @click="goTemplateDetail(item.id)"
       >
         <div class="thumb">
+          <img :src="item.thumbnailImage" class="thumb-img" />
+
           <span class="thumb-tag">{{ item.tag }}</span>
           <span class="thumb-label">{{ item.label }}</span>
 
-          <span class="price-badge" v-if="item.price > 0">₩{{ item.price }}</span>
-          <span class="price-badge" v-else>무료</span>
         </div>
 
         <div class="card-body">
           <div class="template-title">{{ item.title }}</div>
 
-          <!-- 판매량으로 변경 -->
           <div class="template-creator">
-            by {{ item.creator }} | 판매량 {{ item.level }}
+            by {{ item.creator }} | 판매량 {{ item.salesCount }}
           </div>
 
-          <!-- 등록 날짜 (하트 위쪽) -->
           <div class="template-date">
             등록일: {{ item.date }}
           </div>
@@ -88,21 +104,14 @@
               <span class="tag" v-for="t in item.tags" :key="t">{{ t }}</span>
             </div>
 
-            <!-- 다운로드 제거 → 하트만 표시 -->
             <div class="stats">
               <div class="stat-item">❤️ {{ item.like }}</div>
+              <div class="price-text">
+                {{ item.price === 0 ? '무료' : '₩' + item.price }}
+            </div>
             </div>
           </div>
 
-          <div class="buy-row">
-            <span :class="{ free: item.price === 0 }" class="price-text">
-              {{ item.price === 0 ? '무료' : '₩' + item.price }}
-            </span>
-
-            <button class="buy-btn">
-              {{ item.price === 0 ? '내 기록장에 추가' : '구매하기' }}
-            </button>
-          </div>
         </div>
       </article>
     </section>
@@ -119,32 +128,37 @@
       </button>
     </div>
 
+    <!-- TEMPLATE CREATE MODAL -->
+    <CreateTemplateModal
+      v-if="showCreateModal"
+      @close="showCreateModal = false"
+      @success="onTemplateCreated"
+    />
+
   </div>
 </template>
 
 <script>
 import { useAuthStore } from "@/stores/authStore"
+import TemplateList from "@/pages/templates/TemplateList.vue";
+import CreateTemplateModal from "@/pages/templates/CreateTemplateModal.vue";
+import { templateApi } from "@/api/axios";
+import { useRouter } from 'vue-router'
 
 export default {
   name: "HomeView",
+
+  components: { TemplateList, CreateTemplateModal },
 
   data() {
     return {
       page: 1,
       pageSize: 6,
+      templates: [],
+      showCreateModal: false,
 
-      templates: Array.from({ length: 30 }).map((_, i) => ({
-        id: i + 1,
-        date: `2025-01-${String((i % 28) + 1).padStart(2, "0")}`, // 등록날짜 추가
-        tag: "전신 • 루틴",
-        label: "Routine " + (i + 1),
-        title: `템플릿 제목 ${i + 1}`,
-        creator: "Creator" + (i + 1),
-        level: "⭐⭐⭐", // 별은 유지
-        price: (i % 3 === 0 ? 0 : 4900),
-        tags: ["헬스장", "운동"],
-        like: 100 + i
-      }))
+      search: "",
+      sort: "SALES",
     }
   },
 
@@ -167,27 +181,126 @@ export default {
     goLogin() {
       this.$router.push("/login")
     },
+
     goToRecord() {
       this.$router.push("/month")
     },
+
     goTemplateDetail(id) {
-      this.$router.push(`/template/${id}`)
+      this.$router.push(`/templates/${id}`)
     },
+
     goPage(p) {
       this.page = p
-    }
+    },
+
+    openCreateModal() {
+      this.showCreateModal = true;
+    },
+
+    goToCharge() {
+      this.$router.push("/point-charge")
+    },
+
+    async fetchTemplates() {
+      try {
+        const res = await templateApi.getPage({
+          page: this.page - 1,
+          size: this.pageSize,
+          name: this.search,
+          sort: this.sort
+        });
+
+        const url = import.meta.env.VITE_IMG_BASE_URL;
+        const list = res.data.data.content;
+
+        this.templates = list.map(t => ({
+          id: t.id,
+          title: t.name,
+          creator: t.writerNickname ?? "Unknown",
+          salesCount: t.salesCount ?? 0,
+          price: t.price,
+          thumbnailImage: url + t.thumbnailImage,
+          date: t.createdAt ? t.createdAt.split("T")[0] : "",
+          tags: [],
+          like: t.recommendCount ?? 0,
+        }));
+
+      } catch (e) {
+        console.error("템플릿 로딩 실패:", e);
+      }
+    },
+
+// 정렬 변경 시 자동 새로고침
+    async changeSort(type) {
+      this.sort = type;
+      this.page = 1;       // 정렬 바꾸면 첫 페이지로 이동
+      await this.fetchTemplates();
+    },
+
+// 기존 loadTemplates 유지하면서 내부는 fetchTemplates 호출
+    async loadTemplates() {
+      await this.fetchTemplates();
+    },
+
+    async onTemplateCreated() {
+      this.showCreateModal = false;
+      await this.loadTemplates();
+    },
+  },
+
+  async mounted() {
+    await this.loadTemplates();
   }
-}
+};
 </script>
 
 <style scoped>
-
-/* 로그인 시 HERO 사라진 뒤 여백 조정 */
-.home.logged-in .page-title-row {
-  margin-top: 30px !important;
+.home {
+  padding-top: 80px;
 }
 
-/* FEATURES */
+/* 검색바 + 정렬탭 같은 줄 */
+.search-sort-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 25px 5% 0 5%;
+}
+
+/* 검색 input */
+.search-input {
+  width: 340px;
+  height: 44px;
+  padding: 0 15px;
+  background: #0f0f0f;
+  color: white;
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 10px;
+  font-size: 15px;
+}
+
+.search-input::placeholder {
+  color: rgba(255,255,255,0.45);
+}
+
+/* 탭 */
+.tabs {
+  display: flex;
+  gap: 10px;
+}
+.tab {
+  padding: 6px 12px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 999px;
+}
+.tab.active {
+  background: white;
+  color: black;
+  font-weight: bold;
+}
+
+/* 기존 코드 전부 유지 (생략 없음) */
 .features {
   padding: 20px 5%;
   display: flex;
@@ -209,7 +322,6 @@ export default {
   transform: translateY(-5px);
 }
 
-/* HERO */
 .hero {
   display: flex;
   flex-direction: column;
@@ -237,12 +349,12 @@ export default {
   margin-top: 30px;
 }
 
-/* TEMPLATE HEADER */
+/* 페이지 헤더 */
 .page-title-row {
   display: flex;
   justify-content: space-between;
   padding: 0 5%;
-  margin-top: 80px;
+  margin-top: 50px;
   align-items: center;
 }
 .cta-sell-btn {
@@ -253,55 +365,17 @@ export default {
   color: white;
   font-size: 13px;
   font-weight: 600;
-  display: inline-flex;
-  align-items: center;
 }
 
-/* TABS */
-.tabs-row {
-  padding: 0 5%;
-  margin-top: 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.tabs {
-  display: flex;
-  gap: 10px;
-}
-.tab {
-  padding: 6px 12px;
-  background: rgba(255,255,255,0.1);
-  border-radius: 999px;
-}
-.tab.active {
-  background: white;
-  color: black;
-  font-weight: bold;
-}
-.filters {
-  display: flex;
-  gap: 8px;
-}
-.chip {
-  padding: 5px 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(255,255,255,0.2);
-}
-
-/* GRID 3×2 */
+/* GRID */
 .grid {
   padding: 30px 5%;
   display: grid;
-
-  /* 한 줄 3개 고정 + 반응형 너비 */
   grid-template-columns: repeat(3, 1fr);
-
   gap: 20px;
 }
 
 .card-template {
-  width: 100%;          /* 1fr 크기만큼 자연스러운 반응형 */
   background: #101016;
   border-radius: 16px;
   border: 1px solid rgba(255,255,255,0.1);
@@ -309,35 +383,32 @@ export default {
   transition: .2s;
   cursor: pointer;
 }
+
 .card-template:hover {
   transform: translateY(-4px);
   border-color: rgba(255,255,255,0.2);
 }
 
 .thumb {
+  width: 100%;
   height: 150px;
-  background: #1a1a1a;
+  background: inherit;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 12px;
-  position: relative;
+  overflow: hidden;
 }
-.thumb-tag {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  padding: 3px 8px;
-  background: rgba(0,0,0,0.6);
-  border-radius: 999px;
-  font-size: 11px;
-}
-.price-badge {
-  position: absolute;
-  bottom: 8px;
-  right: 8px;
-  padding: 4px 8px;
-  font-size: 11px;
-  border-radius: 999px;
-  background: #e60023;
-  color: white;
+
+.thumb-img {
+  max-width: 100%;
+  max-height: 100%;
+
+  width: auto;
+  height: auto;
+
+  object-fit: contain;
 }
 
 .template-title {
@@ -345,61 +416,30 @@ export default {
   font-size: 14px;
   font-weight: bold;
 }
+
 .template-creator {
   margin-top: 4px;
   font-size: 12px;
   opacity: 0.75;
 }
 
-/* 등록 날짜 */
 .template-date {
   font-size: 11px;
   opacity: 0.7;
   margin: 4px 0;
 }
 
-/* TAGS + HEART */
 .meta-row {
   margin-top: 6px;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
-.tags {
-  display: flex;
-  gap: 4px;
-}
-.tag {
-  padding: 3px 6px;
-  background: rgba(255,255,255,0.1);
-  border-radius: 6px;
-  font-size: 10px;
-}
-.stats {
-  font-size: 11px;
-  display: flex;
-  align-items: center;
-}
 
-/* BUY ROW */
 .buy-row {
   margin-top: 10px;
-  display: flex;
-  justify-content: space-between;
-}
-.buy-btn {
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: white;
-  color: black;
-  font-size: 11px;
-  font-weight: bold;
-}
-.price-text.free {
-  color: #11c46b;
 }
 
-/* PAGINATION */
 .pagination {
   padding: 30px 50px;
   display: flex;
@@ -410,11 +450,23 @@ export default {
   background: rgba(255,255,255,0.1);
   padding: 8px 12px;
   border-radius: 8px;
-  border: none;
   color: white;
 }
 .pagination button.active {
   background: #e60023;
   font-weight: bold;
+}
+
+.stats {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.price-text {
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0.85;
 }
 </style>

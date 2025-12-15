@@ -104,3 +104,59 @@ api.interceptors.response.use(
 );
 
 export default api
+
+//  템플릿 API 전용 함수
+export const templateApi = {
+
+  // 전체 조회 (정렬/검색 없음)
+  getAll() {
+    return api.get(`/templates/all`);
+  },
+
+  // 상세 조회
+  getDetail(id) {
+    return api.get(`/templates/${id}`);
+  },
+
+  // 추천하기
+  recommend(id) {
+    return api.post(`/templates/${id}/recommend`);
+  },
+
+  // 추천 취소
+  unRecommend(id) {
+    return api.delete(`/templates/${id}/recommend`);
+  },
+
+  // 구매하기
+  purchase(id) {
+    return api.post(`/templates/${id}/purchase`);
+  },
+
+  getPage({ page = 0, size = 10, name = "", sort = "LATEST" }) {
+    return api.get(`/templates/paged`, {
+      params: { page, size, name, sort }
+    });
+  },
+
+  // 템플릿 수정 (JSON)
+  updateTemplate(id, payload) {
+    return api.patch(`/templates/${id}`, payload);
+  },
+
+
+  // 템플릿 삭제
+  deleteTemplate(id) {
+    return api.delete(`/templates/${id}`);
+  },
+
+  //  내 템플릿 구매 내역
+  getMyPurchaseHistory() {
+    return api.get(`/templates/purchases/me`);
+  },
+
+  //  내 템플릿 판매 내역
+  getMySalesHistory() {
+    return api.get(`/templates/sales/me`);
+  }
+};
