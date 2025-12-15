@@ -44,7 +44,8 @@ const maxPrice = 10000;
 // Toss 클라이언트 키
 const clientKey = 'test_ck_LlDJaYngroa7b9vy92zm3ezGdRpX'
 const router = useRouter()
-
+const fromPath = router.options.history.state.back // 전 페이지 localStorage 담기
+localStorage.setItem("fromPath", fromPath)
 // 상태 변수
 const amount = ref(0)
 const paymentReady = ref(false)
