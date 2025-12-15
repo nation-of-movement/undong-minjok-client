@@ -214,7 +214,6 @@ export default {
 
     // 모달 열기 (기구 선택 버튼 클릭)
     openPartModal(index) {
-      console.log('✅ 기구 선택 버튼 클릭', index)
       this.modalRowIndex = index
       this.selectedPartId = null
       this.selectedPartName = null

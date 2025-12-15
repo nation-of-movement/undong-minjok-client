@@ -120,7 +120,6 @@ const ready = computed(() => paymentReady.value)
 
 // 결제 버튼 클릭 시
 function checkAmount() {
-console.log(amount.value);
 
   if (amount.value < 100) {
     alert("100원이상 결제해주세요.")
