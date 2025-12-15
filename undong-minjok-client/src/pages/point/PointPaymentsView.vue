@@ -40,7 +40,7 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { paymentsPrepareApi } from '../../api/paymentsApi.js'
 import { useRouter } from 'vue-router'
 import {formatNumberWithCommas} from './util.js'
-const maxPrice = 10000;
+const maxPrice = 1000000;
 // Toss 클라이언트 키
 const clientKey = 'test_ck_LlDJaYngroa7b9vy92zm3ezGdRpX'
 const router = useRouter()
@@ -51,7 +51,8 @@ const amount = ref(0)
 const paymentReady = ref(false)
 const tossPaymentsInstance = ref(null)
 const closePayment = () => {
-  router.push('/')
+  router.push({ path: `${fromPath}` });
+  localStorage.removeItem('fromPath');
 }
 
 // Toss SDK 로더 (수정된 완전 버전)
@@ -119,7 +120,6 @@ const ready = computed(() => paymentReady.value)
 
 // 결제 버튼 클릭 시
 function checkAmount() {
-console.log(amount.value);
 
   if (amount.value < 100) {
     alert("100원이상 결제해주세요.")
