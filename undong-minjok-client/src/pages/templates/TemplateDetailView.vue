@@ -2,7 +2,7 @@
   <div class="detail-page">
     <!-- HEADER BAR -->
     <HeaderBar />
-    <RouterView />
+
 
     <!-- TOP: 1 : 2 비율 -->
     <section class="top-section">
@@ -74,10 +74,16 @@
         <!-- 구매 버튼 조건문 적용 -->
         <button
           class="buy-btn"
-          :disabled="template.isMine"
-          @click="!template.isMine && (showBuyModal = true)"
+          :disabled="template.isOwner || template.isPurchased"
+          @click="onClickBuy"
         >
-          {{ template.isMine ? '내 템플릿입니다' : '구매하기' }}
+          {{
+            template.isOwner
+              ? '내가 만든 템플릿입니다'
+              : template.isPurchased
+                ? '구매한 템플릿입니다'
+                : '구매하기'
+          }}
         </button>
 
         <div class="sell-meta">
@@ -149,7 +155,9 @@ export default {
         thumbnail: '',
         description: '',
         date: '',
-        isMine: false,
+        isOwner: false,
+        isPurchased: false,
+
       },
 
       starLevel: '',
@@ -171,6 +179,10 @@ export default {
   },
 
   methods: {
+    onClickBuy() {
+      if (this.template.isOwner || this.template.isPurchased) return
+      this.showBuyModal = true
+    },
     async fetchTemplateDetail(id) {
       try {
         const res = await templateApi.getDetail(id)
@@ -186,7 +198,8 @@ export default {
         this.template.creator = d.writerNickname
         this.template.bio = d.userProfile?.bio || ''
 
-        this.template.isMine = d.isMine
+        this.template.isOwner = d.isMine
+        this.template.isPurchased = d.isPurchased
         this.template.price = d.price
         this.template.salesCount = d.salesCount
         this.template.category = d.category || ''
@@ -241,7 +254,7 @@ export default {
 
     async purchaseTemplate() {
       try {
-        if (this.template.isMine) {
+        if (this.template.isOwner) {
           alert('본인이 만든 템플릿은 구매할 수 없습니다.')
           this.showBuyModal = false
           return
@@ -251,6 +264,7 @@ export default {
         await templateApi.purchase(id)
 
         alert('구매가 완료되었습니다!')
+        this.template.isPurchased = true
 
         this.showBuyModal = false
 
