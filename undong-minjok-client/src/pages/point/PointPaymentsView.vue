@@ -40,7 +40,7 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { paymentsPrepareApi } from '../../api/paymentsApi.js'
 import { useRouter } from 'vue-router'
 import {formatNumberWithCommas} from './util.js'
-const maxPrice = 10000;
+const maxPrice = 1000000;
 // Toss 클라이언트 키
 const clientKey = 'test_ck_LlDJaYngroa7b9vy92zm3ezGdRpX'
 const router = useRouter()
