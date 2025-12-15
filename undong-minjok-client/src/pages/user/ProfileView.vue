@@ -1615,23 +1615,74 @@ onMounted(() => {
   font-weight: 700;
 }
 
-.modal-overlay.edit-template-modal .exercise-item {
+/* ================= 운동 입력 6칸: 3칸 + 3칸 줄바꿈 + 칸 사이 간격 확실히 ================= */
+
+.modal-overlay.edit-template-modal .exercise-item.exercise-item--create {
   display: grid;
-  grid-template-columns: 1.6fr 1fr 1fr 0.8fr 0.8fr 0.8fr auto;
-  gap: 8px;
+
+  /* ✅ 3칸 + 삭제버튼 */
+  grid-template-columns: repeat(3, minmax(180px, 1fr)) auto;
+  grid-template-areas:
+    "c1 c2 c3 ."
+    "c4 c5 c6 del";
+
+  /* ✅ 간격을 더 크게 + 확실히 적용 */
+  column-gap: 18px !important;
+  row-gap: 14px !important;
+
   align-items: center;
 
-  padding: 10px;
+  padding: 14px;
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 
-.modal-overlay.edit-template-modal .input-sm {
-  width: 100%;
-  padding: 9px 10px;
+/* ✅ 요소 타입(input/button) 상관없이 순서대로 배치 */
+.modal-overlay.edit-template-modal .exercise-item.exercise-item--create > :nth-child(1) { grid-area: c1; }
+.modal-overlay.edit-template-modal .exercise-item.exercise-item--create > :nth-child(2) { grid-area: c2; }
+.modal-overlay.edit-template-modal .exercise-item.exercise-item--create > :nth-child(3) { grid-area: c3; }
+.modal-overlay.edit-template-modal .exercise-item.exercise-item--create > :nth-child(4) { grid-area: c4; }
+.modal-overlay.edit-template-modal .exercise-item.exercise-item--create > :nth-child(5) { grid-area: c5; }
+.modal-overlay.edit-template-modal .exercise-item.exercise-item--create > :nth-child(6) { grid-area: c6; }
+
+/* 삭제 버튼 우하단 */
+.modal-overlay.edit-template-modal .exercise-item.exercise-item--create > .delete-btn {
+  grid-area: del;
+  justify-self: end;
+  align-self: end;
 }
+
+/* ✅ input/button이 “칸 안에서” 너무 꽉 차서 붙어 보이는 느낌 완화 */
+.modal-overlay.edit-template-modal .exercise-item.exercise-item--create .input-sm,
+.modal-overlay.edit-template-modal .exercise-item.exercise-item--create button.input-sm {
+  width: 100%;
+  height: 42px;
+  line-height: 42px;
+  padding: 0 12px;
+
+  border-radius: 12px;
+  box-sizing: border-box;
+}
+
+/* 기구선택 버튼 input처럼 */
+.modal-overlay.edit-template-modal .exercise-item.exercise-item--create button.input-sm {
+  text-align: left;
+  cursor: pointer;
+}
+
+/* ✅ 작은 화면: 2칸 + 2칸 + 2칸(세 줄)로 내려가게 */
+@media (max-width: 920px) {
+  .modal-overlay.edit-template-modal .exercise-item.exercise-item--create {
+    grid-template-columns: repeat(2, minmax(180px, 1fr)) auto;
+    grid-template-areas:
+      "c1 c2 ."
+      "c3 c4 ."
+      "c5 c6 del";
+  }
+}
+
 
 /* 버튼들 */
 .modal-overlay.edit-template-modal .add-btn {
@@ -1688,22 +1739,6 @@ onMounted(() => {
   color: #fff;
 }
 
-/* 숫자 인풋 화살표 제거 */
-.modal-overlay.edit-template-modal input[type="number"]::-webkit-outer-spin-button,
-.modal-overlay.edit-template-modal input[type="number"]::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-.modal-overlay.edit-template-modal input[type="number"] {
-  -moz-appearance: textfield;
-}
-
-/* 작은 화면 대응 */
-@media (max-width: 920px) {
-  .modal-overlay.edit-template-modal .exercise-item {
-    grid-template-columns: 1fr 1fr 1fr;
-  }
-}
 
 /* ================= 수정 모달 내부 '기구 선택' 모달 (두번째 사진 스타일) ================= */
 .edit-pick-modal-bg {
