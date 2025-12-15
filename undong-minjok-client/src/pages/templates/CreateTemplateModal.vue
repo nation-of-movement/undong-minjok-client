@@ -376,6 +376,9 @@ export default {
   display: flex;
   gap: 30px;
   height: 70vh;
+  flex: 1;
+  min-height: 0;
+  margin-top: 16px;
 }
 
 .modal-bg {
@@ -394,6 +397,9 @@ export default {
   padding: 30px;
   border-radius: 14px;
   color: white;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .modal {
@@ -421,8 +427,13 @@ input[type='number'] {
 .left-panel {
   flex: 2;
   max-height: 70vh;
-  overflow-y: visible;
-  padding-right: 5px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+  padding-top: 16px;
+  scrollbar-gutter: stable;
+  padding-right: 24px;     /* ← 핵심 */
+  box-sizing: border-box;
 }
 
 /* RIGHT PANEL — 고정 위치 */
