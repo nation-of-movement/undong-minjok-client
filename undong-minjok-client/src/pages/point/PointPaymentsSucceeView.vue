@@ -16,10 +16,10 @@ const paymentInfo = reactive({
   date : ''
 })
 
-
-// 확인 btn
+const fromPath = localStorage.getItem('fromPath');
 const closeBtn = () => {
-  router.push({ path: '/'});
+  router.push({ path: `${fromPath}` });
+  localStorage.removeItem('fromPath');
 }
 
 // 결제 승인
